@@ -1,0 +1,77 @@
+from fastapi import FastAPI
+
+from app.core.config import settings
+from app.core.exception_handlers import (
+    app_exception_handler,
+    conflict_exception_handler,
+    not_found_exception_handler,
+    validation_exception_handler,
+    unauthorized_exception_handler,
+    forbidden_exception_handler,
+)
+from app.core.exceptions import (
+    AppException,
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+    UnauthorizedException,
+    ForbiddenException,
+)
+from app.routes.router import api_router
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(
+    title=settings.app_name,
+    description="API backend para el sistema de información",
+    version=settings.app_version,
+    debug=settings.debug,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_exception_handler(
+    AppException,
+    app_exception_handler,
+)
+
+app.add_exception_handler(
+    NotFoundException,
+    not_found_exception_handler,
+)
+
+app.add_exception_handler(
+    ConflictException,
+    conflict_exception_handler,
+)
+
+app.add_exception_handler(
+    UnauthorizedException,
+    unauthorized_exception_handler,
+)
+
+app.add_exception_handler(
+    ValidationException,
+    validation_exception_handler,
+)
+
+app.add_exception_handler(
+    ForbiddenException,
+    forbidden_exception_handler,
+)
+
+app.include_router(api_router)
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok"
+    }
