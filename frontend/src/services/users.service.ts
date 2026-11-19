@@ -101,9 +101,14 @@ export async function activateUser(
   return response.data
 }
 
+/**
+ * Cambia el rol. Para el rol coordinador se puede indicar la
+ * coordinación que gestionará (si no se envía, conserva la actual).
+ */
 export async function changeUserRole(
   userUuid: string,
   role: UserRole,
+  coordinacionUuid?: string,
 ): Promise<User> {
   const response = await apiRequest<
     ApiResponse<User>
@@ -111,7 +116,10 @@ export async function changeUserRole(
     `/users/${userUuid}/role`,
     {
       method: 'PATCH',
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({
+        role,
+        ...(coordinacionUuid ? { coordinacion_uuid: coordinacionUuid } : {}),
+      }),
     },
   )
 

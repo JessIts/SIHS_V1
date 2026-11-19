@@ -29,6 +29,10 @@ class FichaService(BaseService[Ficha]):
         ("fichas_trimestre", "No se puede desactivar la ficha: tiene trimestres programados activos."),
     ]
 
+    def scope_conditions(self) -> list:
+        # Coordinador: solo las fichas de los programas de su coordinación
+        return [Ficha.programa.has(Programa.coordinacion_id == self.scope.coordinacion_id)]
+
     def _programa(self, programa_uuid: UUID) -> Programa:
         return self.resolve(
             ProgramaRepository,

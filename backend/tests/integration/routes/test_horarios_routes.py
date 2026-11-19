@@ -397,23 +397,200 @@ def test_aprendices_y_rol(admin_client, escenario, db):
 # ----------------------------------------------------------------------
 # Permisos por rol y paneles personales
 # ----------------------------------------------------------------------
-def test_coordinador_gestiona_y_otros_roles_no_leen_catalogos(client, db):
-    _login(client, _create_user(db, UserRole.COORDINADOR))
+def _coordinador(db, coordinacion_uuid: str | None) -> User:
+    """Usuario coordinador asignado a la coordinación indicada."""
 
-    sede = _post(client, "/sedes", {"nombre": f"Sede Coord {_uid()}", "direccion": "Calle 5"})
-    assert client.get(f"{API}/sedes/{sede['uuid']}").status_code == 200
-    assert client.get(f"{API}/dashboard/resumen").status_code == 200
+    from app.models.coordinacion import Coordinacion
 
-    # El coordinador consulta usuarios por rol, pero no administra cuentas
-    assert client.get(f"{API}/users", params={"role": "instructor"}).status_code == 200
-    assert client.get(f"{API}/users/inactive").status_code == 403
+    user = _create_user(db, UserRole.COORDINADOR)
+
+    if coordinacion_uuid:
+        user.coordinacion = db.query(Coordinacion).filter(Coordinacion.uuid == coordinacion_uuid).first()
+        db.commit()
+
+    return user
+
+
+def _otra_coordinacion(c, e: dict) -> dict:
+    """Otra coordinación con su programa, resultado y ficha en el mismo trimestre."""
+
+    s = _uid()
+
+    coordinacion = _post(c, "/coordinaciones", {"nombre": f"Otra Coordinación {s}"})
+    programa = _post(c, "/programas", {
+        "codigo": f"OP-{s}",
+        "nombre": "OTRO PROGRAMA",
+        "coordinacion_uuid": coordinacion["uuid"],
+    })
+    competencia = _post(c, "/competencias", {"programa_uuid": programa["uuid"], "codigo": "C1", "descripcion": "xxx"})
+    resultado = _post(c, "/resultados-aprendizaje", {"competencia_uuid": competencia["uuid"], "codigo": "01", "descripcion": "xxx"})
+    ficha = _post(c, "/fichas", {
+        "codigo": f"OF{s}",
+        "programa_uuid": programa["uuid"],
+        "jornada_uuid": e["jornada"]["uuid"],
+        "fecha_inicio": "2024-10-01",
+        "fecha_fin": "2026-12-31",
+    })
+    ft = _post(c, "/fichas-trimestre", {
+        "ficha_uuid": ficha["uuid"],
+        "trimestre_uuid": e["trimestre"]["uuid"],
+        "trimestre_ficha": 3,
+        "horas_semanales": 24,
+    })
+
+    return {"coordinacion": coordinacion, "resultado": resultado, "ft": ft}
+
+
+def _asignar_ambiente(c, ambiente: dict, coordinacion_uuid: str | None):
+    return c.put(f"{API}/ambientes/{ambiente['uuid']}", json={"coordinacion_uuid": coordinacion_uuid})
+
+
+def test_coordinador_solo_consulta_y_otros_roles_no_leen_catalogos(client, db, escenario):
+    e = escenario
+    coordinacion_uuid = e["programa"]["coordinacion"]["uuid"]
 
     client.cookies.clear()
-    _login(client, _create_user(db, UserRole.INSTRUCTOR))
+    _login(client, _coordinador(db, coordinacion_uuid))
 
-    assert client.get(f"{API}/sedes").status_code == 403
-    assert client.get(f"{API}/dashboard/resumen").status_code == 403
-    assert client.get(f"{API}/users").status_code == 403
+    # No registra ni modifica catálogos, fichas ni ambientes
+    assert client.post(f"{API}/sedes", json={"nombre": f"Sede {_uid()}", "direccion": "Calle 5"}).status_code == 403
+    assert client.post(f"{API}/ambientes", json={"sede_uuid": e["sede"]["uuid"], "nombre": "999"}).status_code == 403
+    assert client.put(f"{API}/ambientes/{e['ambiente_a']['uuid']}", json={"nombre": "X"}).status_code == 403
+    assert client.post(f"{API}/fichas", json={
+        "codigo": f"C{_uid()}",
+        "programa_uuid": e["programa"]["uuid"],
+        "jornada_uuid": e["jornada"]["uuid"],
+        "fecha_inicio": "2024-10-01",
+        "fecha_fin": "2026-12-31",
+    }).status_code == 403
+    assert client.delete(f"{API}/fichas/{e['ft_1']['ficha']['uuid']}").status_code == 403
+
+    # Pero sí consulta
+    assert client.get(f"{API}/sedes/{e['sede']['uuid']}").status_code == 200
+
+    resumen = client.get(f"{API}/dashboard/resumen")
+    assert resumen.status_code == 200
+    assert resumen.json()["data"]["coordinacion"] == e["programa"]["coordinacion"]["nombre"]
+
+    # Solo ve instructores, y no administra cuentas
+    usuarios = client.get(f"{API}/users", params={"role": "admin", "limit": 100}).json()["data"]["items"]
+    assert usuarios and {u["role"] for u in usuarios} == {"instructor"}
+    assert client.get(f"{API}/users/inactive").status_code == 403
+
+    for role in (UserRole.INSTRUCTOR, UserRole.APRENDIZ):
+        client.cookies.clear()
+        _login(client, _create_user(db, role))
+
+        assert client.get(f"{API}/sedes").status_code == 403
+        assert client.get(f"{API}/dashboard/resumen").status_code == 403
+        assert client.get(f"{API}/users").status_code == 403
+        assert client.post(f"{API}/horarios", json=_casilla(e)).status_code == 403
+
+
+def test_coordinador_sin_coordinacion_no_accede(client, db):
+    _login(client, _coordinador(db, None))
+
+    r = client.get(f"{API}/ambientes")
+    assert r.status_code == 403
+    assert "no tiene una coordinación asignada" in r.json()["message"]
+
+
+def test_coordinador_programa_solo_su_coordinacion(client, db, escenario):
+    c = client
+    e = escenario
+    coordinacion_uuid = e["programa"]["coordinacion"]["uuid"]
+    otra = _otra_coordinacion(c, e)
+
+    # El admin reparte los ambientes: A para la coordinación, B para la otra
+    assert _asignar_ambiente(c, e["ambiente_a"], coordinacion_uuid).status_code == 200
+    asignado = _asignar_ambiente(c, e["ambiente_b"], otra["coordinacion"]["uuid"])
+    assert asignado.status_code == 200
+    assert asignado.json()["data"]["coordinacion"]["uuid"] == otra["coordinacion"]["uuid"]
+
+    sin_asignar = _post(c, "/ambientes", {"sede_uuid": e["sede"]["uuid"], "nombre": f"S-{_uid()}"})
+
+    c.cookies.clear()
+    _login(c, _coordinador(db, coordinacion_uuid))
+
+    # Solo ve sus ambientes, sus fichas y sus programaciones
+    ambientes = c.get(f"{API}/ambientes", params={"limit": 100}).json()["data"]["items"]
+    assert [a["uuid"] for a in ambientes] == [e["ambiente_a"]["uuid"]]
+    assert c.get(f"{API}/ambientes/{e['ambiente_b']['uuid']}").status_code == 404
+
+    fichas = {f["uuid"] for f in c.get(f"{API}/fichas", params={"limit": 100}).json()["data"]["items"]}
+    assert e["ft_1"]["ficha"]["uuid"] in fichas
+    assert otra["ft"]["ficha"]["uuid"] not in fichas
+    assert c.get(f"{API}/fichas-trimestre/{otra['ft']['uuid']}").status_code == 404
+
+    # Programa con su ambiente
+    casilla = _post(c, "/horarios", _casilla(e))
+
+    # No usa el ambiente de otra coordinación ni uno sin asignar
+    r = c.post(f"{API}/horarios", json=_casilla(e, dia_uuid=e["martes"]["uuid"], ambiente_uuid=e["ambiente_b"]["uuid"]))
+    assert r.status_code == 403
+    assert "no está asignado a tu coordinación" in r.json()["message"]
+
+    r = c.post(f"{API}/horarios", json=_casilla(e, dia_uuid=e["martes"]["uuid"], ambiente_uuid=sin_asignar["uuid"]))
+    assert r.status_code == 403
+
+    # No programa fichas de otra coordinación ni ve su horario
+    r = c.post(f"{API}/horarios", json=_casilla(
+        e,
+        ficha_trimestre_uuid=otra["ft"]["uuid"],
+        resultado_uuid=otra["resultado"]["uuid"],
+        modalidad="sincronico",
+        ambiente_uuid=None,
+    ))
+    assert r.status_code == 403
+    assert "no pertenece a tu coordinación" in r.json()["message"]
+    assert c.get(f"{API}/horarios/grilla/{otra['ft']['uuid']}").status_code == 403
+
+    # Edita y elimina sus propias casillas
+    upd = c.put(f"{API}/horarios/{casilla['uuid']}", json={"observacion": "Traer portátil"})
+    assert upd.status_code == 200, upd.json()
+    assert c.delete(f"{API}/horarios/{casilla['uuid']}").status_code == 204
+
+
+def test_ambiente_de_otra_coordinacion_no_se_usa_ni_se_reasigna(admin_client, escenario):
+    c = admin_client
+    e = escenario
+    otra = _otra_coordinacion(c, e)
+
+    # Ni el admin puede programar la ficha en un ambiente de otra coordinación
+    assert _asignar_ambiente(c, e["ambiente_b"], otra["coordinacion"]["uuid"]).status_code == 200
+
+    r = c.post(f"{API}/horarios", json=_casilla(e, ambiente_uuid=e["ambiente_b"]["uuid"]))
+    assert r.status_code == 422
+    assert "pertenece a" in r.json()["message"]
+
+    # Un ambiente sin asignar sí lo puede usar el admin
+    _post(c, "/horarios", _casilla(e))
+
+    # Y no se reasigna a otra coordinación si ya tiene clases de esta
+    r = _asignar_ambiente(c, e["ambiente_a"], otra["coordinacion"]["uuid"])
+    assert r.status_code == 409
+    assert "tiene clases" in r.json()["message"]
+
+    # Dejarlo sin asignar sí se permite
+    assert _asignar_ambiente(c, e["ambiente_a"], None).status_code == 200
+
+
+def test_admin_asigna_coordinacion_al_coordinador(admin_client, db, escenario):
+    c = admin_client
+    coordinacion = escenario["programa"]["coordinacion"]
+    usuario = _create_user(db, UserRole.INSTRUCTOR)
+
+    r = c.patch(f"{API}/users/{usuario.uuid}/role", json={
+        "role": "coordinador",
+        "coordinacion_uuid": coordinacion["uuid"],
+    })
+    assert r.status_code == 200, r.json()
+    assert r.json()["data"]["coordinacion"]["uuid"] == coordinacion["uuid"]
+
+    # Al dejar de ser coordinador pierde la coordinación
+    r = c.patch(f"{API}/users/{usuario.uuid}/role", json={"role": "instructor"})
+    assert r.status_code == 200
+    assert r.json()["data"]["coordinacion"] is None
 
 
 def test_paneles_de_aprendiz_e_instructor(client, db, escenario):

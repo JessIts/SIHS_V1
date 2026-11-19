@@ -40,3 +40,8 @@ class Coordinacion(BaseModel):
     programas: Mapped[list["Programa"]] = relationship(
         back_populates="coordinacion",
     )
+
+    ambientes: Mapped[list["Ambiente"]] = relationship(
+        back_populates="coordinacion",
+        order_by="Ambiente.nombre",
+    )

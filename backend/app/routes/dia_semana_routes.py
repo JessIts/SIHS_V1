@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.dia_semana_controller import DiaSemanaController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.dia_semana import (
     DiaSemanaCreate,
     DiaSemanaResponse,
@@ -32,7 +32,7 @@ def get_dia_semana_controller(
 @router.post(
     "",
     response_model=ApiResponse[DiaSemanaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_dia_semana(
@@ -119,7 +119,7 @@ def get_dia_semana(
 @router.put(
     "/{dia_semana_uuid}",
     response_model=ApiResponse[DiaSemanaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_dia_semana(
     dia_semana_uuid: UUID,
@@ -142,7 +142,7 @@ def update_dia_semana(
 @router.delete(
     "/{dia_semana_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva el día (eliminación lógica).",
 )
 def delete_dia_semana(
@@ -157,7 +157,7 @@ def delete_dia_semana(
 @router.patch(
     "/{dia_semana_uuid}/activate",
     response_model=ApiResponse[DiaSemanaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_dia_semana(
     dia_semana_uuid: UUID,

@@ -22,6 +22,8 @@ import {
 } from '../../utils/labels'
 import { opcionesJornadas, opcionesProgramas } from '../../utils/options'
 
+import { usePermissions } from '../../hooks/usePermissions'
+
 import FichaAprendices from './FichaAprendices'
 
 const columns: CrudColumn<Ficha>[] = [
@@ -76,13 +78,19 @@ function toPayload(values: FormValues) {
 }
 
 function Fichas() {
+  const { isAdmin } = usePermissions()
+
   const [fichaAprendices, setFichaAprendices] = useState<Ficha | null>(null)
 
   return (
     <>
       <CrudPage
         title="Fichas"
-        description="Grupos de formación. Desde aquí también se asignan sus aprendices."
+        description={
+          isAdmin
+            ? 'Grupos de formación. Desde aquí también se asignan sus aprendices.'
+            : 'Fichas de los programas de tu coordinación (solo consulta).'
+        }
         entityName="ficha"
         female
         service={fichasService}
@@ -109,7 +117,7 @@ function Fichas() {
         })}
         toCreate={toPayload}
         toUpdate={toPayload}
-        rowActions={(item) => (
+        rowActions={isAdmin ? (item) => (
           <button
             type="button"
             className="btn btn--secondary btn--small"
@@ -117,7 +125,7 @@ function Fichas() {
           >
             Aprendices
           </button>
-        )}
+        ) : undefined}
       />
 
       <Modal

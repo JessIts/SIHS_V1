@@ -33,14 +33,18 @@ SISTEMA SIHS/
   - Grilla y calendario de horario por ficha-trimestre.
   - Endpoints personales (`/mi/*`) y resumen para el dashboard.
   - Todo documentado en Swagger.
-- **Roles y permisos**: `admin`, `coordinador`, `instructor`, `aprendiz`. Solo admin y coordinador modifican datos académicos; instructores y aprendices ven solo su información y la de su programa.
+- **Roles y permisos**:
+  - `admin`: acceso completo; registra y modifica todo (usuarios, catálogos, fichas, ambientes, horarios).
+  - `coordinador`: solo registra horarios de las fichas de su coordinación, usando los ambientes asignados a ella; el resto lo consulta.
+  - `instructor` y `aprendiz`: consultan su información y la de su programa, y editan sus datos básicos.
+- **Ambientes por coordinación**: el admin reparte los ambientes de cada sede entre las coordinaciones; una coordinación no puede usar los ambientes de otra (validado en la API y en la BD).
 - **Frontend**:
   - Login y registro.
   - Dashboard distinto por rol.
   - Vistas CRUD para las 14 entidades académicas.
   - Gestión de usuarios y roles.
   - Grilla visual de horario, y vistas "Mi programa" y "Mi horario".
-- **Datos de prueba**: el script `seed_horarios` carga la ficha 3141665 con su horario real de ejemplo y usuarios de cada rol.
+- **Datos de prueba**: el script `seed_horarios` carga 30 registros por entidad, un coordinador con su coordinación y la ficha 3141665 con su horario real.
 
 ### Pendiente
 - Carga masiva de horarios desde la API (CSV/Excel), hoy disponible solo en el prototipo SQL (`db_horarios/03_carga_masiva.sql`).

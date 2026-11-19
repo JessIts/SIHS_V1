@@ -126,9 +126,11 @@ function AppRoutes() {
             </Route>
 
             {/* =========================
-                GESTIÓN (admin y coordinador)
-                Datos no personales: solo estos
-                roles pueden modificarlos.
+                GESTIÓN
+                - El admin registra y modifica todo.
+                - El coordinador solo registra horarios (de su
+                  coordinación); fichas, programaciones y
+                  ambientes los consulta.
             ========================== */}
 
             <Route
@@ -138,8 +140,20 @@ function AppRoutes() {
                 />
               }
             >
-              <Route path="/gestion/sedes" element={<Sedes />} />
+              <Route path="/gestion/horarios" element={<Horarios />} />
+              <Route path="/gestion/fichas" element={<Fichas />} />
+              <Route path="/gestion/fichas-trimestre" element={<FichasTrimestre />} />
               <Route path="/gestion/ambientes" element={<Ambientes />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['admin']}
+                />
+              }
+            >
+              <Route path="/gestion/sedes" element={<Sedes />} />
               <Route path="/gestion/coordinaciones" element={<Coordinaciones />} />
               <Route path="/gestion/programas" element={<Programas />} />
               <Route path="/gestion/competencias" element={<Competencias />} />
@@ -149,9 +163,6 @@ function AppRoutes() {
               <Route path="/gestion/franjas" element={<FranjasHorarias />} />
               <Route path="/gestion/dias" element={<DiasSemana />} />
               <Route path="/gestion/trimestres" element={<Trimestres />} />
-              <Route path="/gestion/fichas" element={<Fichas />} />
-              <Route path="/gestion/fichas-trimestre" element={<FichasTrimestre />} />
-              <Route path="/gestion/horarios" element={<Horarios />} />
             </Route>
 
             {/* =========================

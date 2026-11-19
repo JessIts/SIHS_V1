@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.coordinacion_controller import CoordinacionController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.coordinacion import (
     CoordinacionCreate,
     CoordinacionResponse,
@@ -32,7 +32,7 @@ def get_coordinacion_controller(
 @router.post(
     "",
     response_model=ApiResponse[CoordinacionResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_coordinacion(
@@ -119,7 +119,7 @@ def get_coordinacion(
 @router.put(
     "/{coordinacion_uuid}",
     response_model=ApiResponse[CoordinacionResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_coordinacion(
     coordinacion_uuid: UUID,
@@ -142,7 +142,7 @@ def update_coordinacion(
 @router.delete(
     "/{coordinacion_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva la coordinación (eliminación lógica).",
 )
 def delete_coordinacion(
@@ -157,7 +157,7 @@ def delete_coordinacion(
 @router.patch(
     "/{coordinacion_uuid}/activate",
     response_model=ApiResponse[CoordinacionResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_coordinacion(
     coordinacion_uuid: UUID,
@@ -176,7 +176,7 @@ def activate_coordinacion(
 @router.post(
     "/{coordinacion_uuid}/sedes/{sede_uuid}",
     response_model=ApiResponse[CoordinacionResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def add_sede_to_coordinacion(
     coordinacion_uuid: UUID,
@@ -196,7 +196,7 @@ def add_sede_to_coordinacion(
 @router.delete(
     "/{coordinacion_uuid}/sedes/{sede_uuid}",
     response_model=ApiResponse[CoordinacionResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def remove_sede_from_coordinacion(
     coordinacion_uuid: UUID,
