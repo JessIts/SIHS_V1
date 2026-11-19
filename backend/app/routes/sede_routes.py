@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.sede_controller import SedeController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.sede import (
     SedeCreate,
     SedeResponse,
@@ -32,7 +32,7 @@ def get_sede_controller(
 @router.post(
     "",
     response_model=ApiResponse[SedeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_sede(
@@ -119,7 +119,7 @@ def get_sede(
 @router.put(
     "/{sede_uuid}",
     response_model=ApiResponse[SedeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_sede(
     sede_uuid: UUID,
@@ -142,7 +142,7 @@ def update_sede(
 @router.delete(
     "/{sede_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva la sede (eliminación lógica).",
 )
 def delete_sede(
@@ -157,7 +157,7 @@ def delete_sede(
 @router.patch(
     "/{sede_uuid}/activate",
     response_model=ApiResponse[SedeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_sede(
     sede_uuid: UUID,

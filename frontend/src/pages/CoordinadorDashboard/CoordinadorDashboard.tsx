@@ -14,8 +14,8 @@ import { errorMessage } from '../../utils/format'
 import '../Dashboard/Dashboard.css'
 
 /**
- * Dashboard del coordinador: centrado en armar los horarios
- * de las fichas del trimestre.
+ * Dashboard del coordinador: centrado en armar los horarios de las
+ * fichas de SU coordinación (el backend ya filtra los datos).
  */
 function CoordinadorDashboard() {
   const { user } = useAuth()
@@ -39,7 +39,11 @@ function CoordinadorDashboard() {
     <section className="dashboard-page">
       <PageHeader
         title={`Hola, ${user?.name ?? ''}`}
-        description="Panel de coordinación académica."
+        description={
+          resumen?.coordinacion
+            ? `${resumen.coordinacion} · Programación de horarios.`
+            : 'Panel de coordinación académica.'
+        }
         actions={
           <Link to="/gestion/horarios" className="btn btn--primary">
             Armar horarios
@@ -62,7 +66,7 @@ function CoordinadorDashboard() {
             <StatCard label="Fichas" value={resumen.conteos.fichas} to="/gestion/fichas" />
             <StatCard label="Instructores" value={resumen.usuarios.instructor} />
             <StatCard label="Aprendices" value={resumen.usuarios.aprendiz} />
-            <StatCard label="Ambientes" value={resumen.conteos.ambientes} to="/gestion/ambientes" />
+            <StatCard label="Mis ambientes" value={resumen.conteos.ambientes} to="/gestion/ambientes" />
             <StatCard label="Clases asignadas" value={resumen.conteos.horarios} to="/gestion/horarios" />
           </div>
 
@@ -87,14 +91,17 @@ function CoordinadorDashboard() {
                 </div>
 
                 <div className="quick-actions">
+                  <Link to="/gestion/horarios" className="btn btn--secondary">
+                    Horarios
+                  </Link>
                   <Link to="/gestion/fichas-trimestre" className="btn btn--secondary">
-                    Programar ficha en trimestre
+                    Fichas por trimestre
                   </Link>
                   <Link to="/gestion/fichas" className="btn btn--secondary">
-                    Fichas y aprendices
+                    Fichas
                   </Link>
-                  <Link to="/gestion/resultados" className="btn btn--secondary">
-                    Resultados de aprendizaje
+                  <Link to="/gestion/ambientes" className="btn btn--secondary">
+                    Mis ambientes
                   </Link>
                 </div>
               </div>

@@ -9,8 +9,10 @@ import {
   getUsers,
 } from '../../services/users.service'
 
+import type { SelectOption } from '../../components/crud/EntityForm/EntityForm'
 import type { User } from '../../types/auth.types'
 import type { UserRole } from '../../types/role.types'
+import { opcionesCoordinaciones } from '../../utils/options'
 import { ROLE_LABELS } from '../../utils/roles'
 
 import './Users.css'
@@ -34,6 +36,16 @@ function Users() {
 
   const [error, setError] =
     useState('')
+
+  const [coordinaciones, setCoordinaciones] =
+    useState<SelectOption[]>([])
+
+  // Opciones para asignar la coordinación de cada coordinador
+  useEffect(() => {
+    opcionesCoordinaciones()
+      .then(setCoordinaciones)
+      .catch(() => setCoordinaciones([]))
+  }, [])
 
   useEffect(() => {
     async function loadUsers() {
@@ -185,6 +197,36 @@ function Users() {
     }
   }
 
+  async function handleCoordinacionChange(
+    user: User,
+    coordinacionUuid: string,
+  ) {
+    try {
+      setError('')
+
+      const updatedUser = await changeUserRole(
+        user.uuid,
+        'coordinador',
+        coordinacionUuid,
+      )
+
+      setUsers((currentUsers) =>
+        currentUsers.map((currentUser) =>
+          currentUser.uuid === user.uuid
+            ? updatedUser
+            : currentUser,
+        ),
+      )
+
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible asignar la coordinación.',
+      )
+    }
+  }
+
   return (
     <section className="users-page">
 
@@ -271,6 +313,7 @@ function Users() {
                       <th>Teléfono</th>
                       <th>Documento</th>
                       <th>Rol</th>
+                      <th>Coordinación</th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
@@ -319,6 +362,34 @@ function Users() {
                                 ),
                               )}
                             </select>
+                          )}
+                        </td>
+
+                        <td>
+                          {user.role === 'coordinador' ? (
+                            <select
+                              className="users-page__role-select"
+                              value={user.coordinacion?.uuid ?? ''}
+                              aria-label={`Coordinación de ${user.name}`}
+                              onChange={(event) =>
+                                handleCoordinacionChange(
+                                  user,
+                                  event.target.value,
+                                )
+                              }
+                            >
+                              <option value="" disabled>
+                                Sin asignar
+                              </option>
+
+                              {coordinaciones.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            '—'
                           )}
                         </td>
 

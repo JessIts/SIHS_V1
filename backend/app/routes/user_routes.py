@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.common.responses import ApiResponse
 from app.controllers.user_controller import UserController
 from app.core.database import get_db
+from app.core.exceptions import NotFoundException
 from app.core.dependencies import (
     get_current_admin,
     get_current_manager,
@@ -109,10 +110,15 @@ def get_users(
         default=None,
         description="Filtrar por rol (ej. instructor, aprendiz).",
     ),
+    current_user=Depends(get_current_manager),
     controller: UserController = Depends(
         get_user_controller
     ),
 ):
+    # El coordinador solo consulta instructores (para programar horarios)
+    if current_user.role == UserRole.COORDINADOR:
+        role = UserRole.INSTRUCTOR
+
     users = controller.get_all(
         page,
         limit,
@@ -145,11 +151,15 @@ def get_inactive_users(
 )
 def get_user(
     user_uuid: UUID,
+    current_user=Depends(get_current_manager),
     controller: UserController = Depends(
         get_user_controller
     ),
 ):
     user = controller.get_by_uuid(user_uuid)
+
+    if current_user.role == UserRole.COORDINADOR and user.role != UserRole.INSTRUCTOR:
+        raise NotFoundException("Usuario no encontrado.")
 
     return ApiResponse(
         message="Usuario obtenido correctamente.",

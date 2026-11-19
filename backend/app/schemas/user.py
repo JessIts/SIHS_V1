@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.roles import UserRole
+from app.schemas.briefs import CoordinacionBrief
 
 
 class UserCreate(BaseModel):
@@ -79,6 +80,13 @@ class UserProfileUpdate(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: UserRole
+    coordinacion_uuid: UUID | None = Field(
+        default=None,
+        description=(
+            "Solo para el rol coordinador: la coordinación que gestionará. "
+            "Si no se envía, conserva la que ya tenía."
+        ),
+    )
 
 
 class UserResponse(BaseModel):
@@ -88,6 +96,7 @@ class UserResponse(BaseModel):
     phone: str
     document_number: str
     role: UserRole
+    coordinacion: CoordinacionBrief | None = None
     is_active: bool
     created_at: datetime
 
@@ -101,4 +110,4 @@ class UserPagination(BaseModel):
     page: int
     limit: int
     total: int
-    pages: int
+    pages: int

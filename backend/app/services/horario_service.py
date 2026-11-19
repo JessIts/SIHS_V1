@@ -4,14 +4,20 @@ from uuid import UUID
 from sqlalchemy import func, select
 
 from app.common.pagination import build_page
-from app.core.exceptions import NotFoundException, ValidationException, ConflictException
+from app.core.exceptions import (
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
 from app.models.enums import ModalidadClase
-from app.models.ficha import ficha_aprendiz
+from app.models.ficha import Ficha, ficha_aprendiz
 from app.models.ficha_trimestre import FichaTrimestre
 from app.models.franja_horaria import FranjaHoraria
 from app.models.horario import Horario
+from app.models.programa import Programa
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.roles import UserRole
 from app.models.trimestre import Trimestre
@@ -36,7 +42,11 @@ class HorarioService(BaseService[Horario]):
       - el instructor tiene rol instructor
       - la temática pertenece al programa de la ficha
       - no hay choques de ficha, instructor ni ambiente
-    Y la base de datos vuelve a exigir las mismas reglas (constraints).
+      - el ambiente no es de otra coordinación distinta a la de la ficha
+    Y la base de datos vuelve a exigir las mismas reglas (constraints y trigger).
+
+    Un coordinador (scope restringido) solo ve y programa las fichas de su
+    coordinación, y solo puede usar los ambientes asignados a ella.
     """
 
     repository_class = HorarioRepository
@@ -50,12 +60,24 @@ class HorarioService(BaseService[Horario]):
         "fk_horarios_ficha_trimestre": "El trimestre no corresponde a la programación de la ficha.",
     }
 
+    def scope_conditions(self) -> list:
+        return [
+            Horario.ficha_trimestre.has(
+                FichaTrimestre.ficha.has(
+                    Ficha.programa.has(Programa.coordinacion_id == self.scope.coordinacion_id)
+                )
+            )
+        ]
+
     # ------------------------------------------------------------------
     # Lectura
     # ------------------------------------------------------------------
     def get(self, entity_uuid: UUID) -> Horario:
         # Los horarios se eliminan físicamente: se buscan sin filtrar is_active
-        entity = self.repository.get_by_uuid(entity_uuid, include_inactive=True)
+        entity = self.repository.get_one_by(
+            Horario.uuid == entity_uuid,
+            *self._scope(),
+        )
 
         if not entity:
             raise NotFoundException("Horario no encontrado.")
@@ -96,7 +118,7 @@ class HorarioService(BaseService[Horario]):
             page=page,
             limit=limit,
             include_inactive=True,
-            conditions=conditions,
+            conditions=list(conditions or []) + self._scope(),
         )
 
         return build_page(items, total, page, limit)
@@ -105,11 +127,7 @@ class HorarioService(BaseService[Horario]):
     # Escritura
     # ------------------------------------------------------------------
     def build_entity(self, data: HorarioCreate) -> Horario:
-        ficha_trimestre = self.resolve(
-            FichaTrimestreRepository,
-            data.ficha_trimestre_uuid,
-            "La programación de ficha por trimestre no existe o está inactiva.",
-        )
+        ficha_trimestre = self._ficha_trimestre(data.ficha_trimestre_uuid)
 
         values = {
             "ficha_trimestre": ficha_trimestre,
@@ -204,6 +222,8 @@ class HorarioService(BaseService[Horario]):
 
         if not ficha_trimestre:
             raise NotFoundException("Programación de ficha por trimestre no encontrada.")
+
+        self._verificar_coordinacion_ficha(ficha_trimestre)
 
         dias, franjas = self.get_calendario()
 
@@ -323,6 +343,9 @@ class HorarioService(BaseService[Horario]):
                 "El resultado de aprendizaje no pertenece al programa de la ficha."
             )
 
+        if ambiente is not None:
+            self._verificar_coordinacion_ambiente(ambiente, ficha_trimestre)
+
         celda = (
             Horario.dia_id == dia.id,
             Horario.franja_id == franja.id,
@@ -366,9 +389,49 @@ class HorarioService(BaseService[Horario]):
                     f"por la ficha {choque.ficha_trimestre.ficha.codigo}."
                 )
 
+    def _verificar_coordinacion_ficha(self, ficha_trimestre: FichaTrimestre) -> None:
+        if (
+            self.scope.restricted
+            and ficha_trimestre.ficha.programa.coordinacion_id != self.scope.coordinacion_id
+        ):
+            raise ForbiddenException(
+                f"La ficha {ficha_trimestre.ficha.codigo} no pertenece a tu coordinación."
+            )
+
+    def _verificar_coordinacion_ambiente(
+        self,
+        ambiente: Ambiente,
+        ficha_trimestre: FichaTrimestre,
+    ) -> None:
+        # Un coordinador solo usa los ambientes asignados a su coordinación
+        if self.scope.restricted and ambiente.coordinacion_id != self.scope.coordinacion_id:
+            raise ForbiddenException(
+                f"El ambiente {ambiente.nombre} no está asignado a tu coordinación."
+            )
+
+        # Nadie (ni el administrador) usa el ambiente de otra coordinación
+        coordinacion_ficha = ficha_trimestre.ficha.programa.coordinacion_id
+
+        if ambiente.coordinacion_id is not None and ambiente.coordinacion_id != coordinacion_ficha:
+            raise ValidationException(
+                f"El ambiente {ambiente.nombre} pertenece a {ambiente.coordinacion.nombre}, "
+                f"no a la coordinación de la ficha {ficha_trimestre.ficha.codigo}."
+            )
+
     # ------------------------------------------------------------------
     # Utilidades
     # ------------------------------------------------------------------
+    def _ficha_trimestre(self, ficha_trimestre_uuid: UUID) -> FichaTrimestre:
+        ficha_trimestre = self.resolve(
+            FichaTrimestreRepository,
+            ficha_trimestre_uuid,
+            "La programación de ficha por trimestre no existe o está inactiva.",
+        )
+
+        self._verificar_coordinacion_ficha(ficha_trimestre)
+
+        return ficha_trimestre
+
     def _dia(self, dia_uuid: UUID) -> DiaSemana:
         return self.resolve(DiaSemanaRepository, dia_uuid, "El día indicado no existe o está inactivo.")
 

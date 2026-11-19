@@ -11,8 +11,7 @@ export interface NavSection {
 }
 
 /**
- * Secciones de gestión: solo admin y coordinador
- * (datos que no son personales).
+ * Secciones de gestión del administrador (registra todo).
  */
 const GESTION: NavSection[] = [
   {
@@ -51,6 +50,27 @@ const GESTION: NavSection[] = [
   },
 ]
 
+/**
+ * El coordinador solo programa horarios de su coordinación; las fichas,
+ * sus programaciones y sus ambientes los consulta.
+ */
+const COORDINACION: NavSection[] = [
+  {
+    title: 'Programación',
+    links: [
+      { to: '/gestion/horarios', label: 'Horarios' },
+      { to: '/gestion/fichas-trimestre', label: 'Fichas por trimestre' },
+      { to: '/gestion/fichas', label: 'Fichas' },
+    ],
+  },
+  {
+    title: 'Infraestructura',
+    links: [
+      { to: '/gestion/ambientes', label: 'Mis ambientes' },
+    ],
+  },
+]
+
 const CUENTA: NavSection = {
   title: 'Cuenta',
   links: [{ to: '/profile', label: 'Mi perfil' }],
@@ -69,7 +89,7 @@ export const NAVIGATION: Record<UserRole, NavSection[]> = {
   ],
   coordinador: [
     { links: [{ to: '/coordinador', label: 'Dashboard' }] },
-    ...GESTION,
+    ...COORDINACION,
     CUENTA,
   ],
   instructor: [

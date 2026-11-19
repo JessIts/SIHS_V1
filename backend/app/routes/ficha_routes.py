@@ -7,7 +7,8 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.ficha_controller import FichaController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_access_scope, get_current_admin, get_current_manager
+from app.core.scope import AccessScope
 from app.schemas.ficha import (
     FichaCreate,
     FichaResponse,
@@ -25,15 +26,16 @@ router = APIRouter(
 
 def get_ficha_controller(
     db: Session = Depends(get_db),
+    scope: AccessScope = Depends(get_access_scope),
 ) -> FichaController:
-    service = FichaService(db)
+    service = FichaService(db, scope)
     return FichaController(service)
 
 
 @router.post(
     "",
     response_model=ApiResponse[FichaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_ficha(
@@ -135,7 +137,7 @@ def get_ficha(
 @router.put(
     "/{ficha_uuid}",
     response_model=ApiResponse[FichaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_ficha(
     ficha_uuid: UUID,
@@ -158,7 +160,7 @@ def update_ficha(
 @router.delete(
     "/{ficha_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva la ficha (eliminación lógica).",
 )
 def delete_ficha(
@@ -173,7 +175,7 @@ def delete_ficha(
 @router.patch(
     "/{ficha_uuid}/activate",
     response_model=ApiResponse[FichaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_ficha(
     ficha_uuid: UUID,
@@ -211,7 +213,7 @@ def get_aprendices_ficha(
 @router.post(
     "/{ficha_uuid}/aprendices/{user_uuid}",
     response_model=ApiResponse[list[UserResponse]],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def add_aprendiz_ficha(
@@ -232,7 +234,7 @@ def add_aprendiz_ficha(
 @router.delete(
     "/{ficha_uuid}/aprendices/{user_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def remove_aprendiz_ficha(
     ficha_uuid: UUID,

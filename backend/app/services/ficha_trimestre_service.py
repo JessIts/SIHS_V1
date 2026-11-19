@@ -3,6 +3,7 @@ from uuid import UUID
 from app.core.exceptions import ConflictException
 from app.models.ficha import Ficha
 from app.models.ficha_trimestre import FichaTrimestre
+from app.models.programa import Programa
 from app.models.trimestre import Trimestre
 from app.repositories.ficha_repository import FichaRepository
 from app.repositories.ficha_trimestre_repository import FichaTrimestreRepository
@@ -23,6 +24,14 @@ class FichaTrimestreService(BaseService[FichaTrimestre]):
         "ck_fichas_trimestre_horas": "Las horas semanales deben ser mayores que cero.",
         "ck_fichas_trimestre_numero": "El trimestre de formación debe ser mayor que cero.",
     }
+
+    def scope_conditions(self) -> list:
+        # Coordinador: solo las programaciones de fichas de su coordinación
+        return [
+            FichaTrimestre.ficha.has(
+                Ficha.programa.has(Programa.coordinacion_id == self.scope.coordinacion_id)
+            )
+        ]
 
     def build_conditions(
         self,

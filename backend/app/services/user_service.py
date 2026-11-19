@@ -8,7 +8,9 @@ from app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
+from app.models.coordinacion import Coordinacion
 from app.models.user import User
+from app.repositories.coordinacion_repository import CoordinacionRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserProfileUpdate, UserRoleUpdate
 from app.core.security import hash_password
@@ -313,6 +315,19 @@ class UserService:
                 "No fue posible actualizar el perfil."
             )
 
+    def _coordinacion(self, coordinacion_uuid: UUID) -> Coordinacion:
+        coordinacion = CoordinacionRepository(self.db).get_by_uuid(
+            entity_uuid=coordinacion_uuid,
+            include_inactive=False,
+        )
+
+        if not coordinacion:
+            raise ValidationException(
+                "La coordinación indicada no existe o está inactiva."
+            )
+
+        return coordinacion
+
     def change_role(
         self,
         user_uuid: UUID,
@@ -328,6 +343,13 @@ class UserService:
         user = self.get_user(user_uuid)
 
         user.role = data.role
+
+        # La coordinación solo aplica a los coordinadores
+        if data.role == UserRole.COORDINADOR:
+            if data.coordinacion_uuid is not None:
+                user.coordinacion = self._coordinacion(data.coordinacion_uuid)
+        else:
+            user.coordinacion = None
 
         try:
             self.repository.update(user)

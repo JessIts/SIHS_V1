@@ -22,6 +22,8 @@ export interface User {
   phone: string
   document_number: string
   role: UserRole
+  /** Solo los coordinadores: la coordinación que gestionan */
+  coordinacion: { uuid: string; nombre: string } | null
   is_active: boolean
   created_at: string
 }
@@ -32,4 +34,4 @@ export interface UserCreate {
   phone: string
   document_number: string
   password: string
-}
+}
