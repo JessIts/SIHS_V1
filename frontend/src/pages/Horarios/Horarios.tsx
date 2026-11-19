@@ -13,8 +13,10 @@ import {
   fichasTrimestreService,
   getGrillaHorario,
   horariosService,
+  programasService,
   resultadosService,
 } from '../../services/academic.service'
+import { usePermissions } from '../../hooks/usePermissions'
 import type {
   ClaseCelda,
   FichaTrimestre,
@@ -51,6 +53,8 @@ const EMPTY_CATALOGOS: Catalogos = {
  * Clic en una casilla vacía -> asignar clase; en una ocupada -> editar / eliminar.
  */
 function Horarios() {
+  const { isAdmin } = usePermissions()
+
   const [searchParams, setSearchParams] = useSearchParams()
   const selected = searchParams.get('ficha_trimestre') ?? ''
 
@@ -144,11 +148,20 @@ function Horarios() {
       try {
         const ficha = await fichasService.get(uuid)
 
-        const [resultados, instructores, ambientes] = await Promise.all([
+        const [resultados, instructores, todosLosAmbientes, programa] = await Promise.all([
           resultadosService.listAll({ programa_uuid: ficha.programa.uuid }),
           opcionesInstructores(),
+          // Al coordinador el backend ya le devuelve solo los de su coordinación
           ambientesService.listAll(),
+          programasService.get(ficha.programa.uuid),
         ])
+
+        // Solo ambientes de la coordinación de la ficha (o sin asignar, para el admin)
+        const ambientes = todosLosAmbientes.filter(
+          (ambiente) =>
+            ambiente.coordinacion === null
+            || ambiente.coordinacion.uuid === programa.coordinacion.uuid,
+        )
 
         if (active) {
           setCatalogos({
@@ -283,11 +296,17 @@ function Horarios() {
     <section className="horarios-page">
       <PageHeader
         title="Horarios"
-        description="Arma el horario de cada ficha. Haz clic en una casilla para asignar o editar la clase."
+        description={
+          isAdmin
+            ? 'Arma el horario de cada ficha. Haz clic en una casilla para asignar o editar la clase.'
+            : 'Arma el horario de las fichas de tu coordinación, con los ambientes asignados a ella.'
+        }
         actions={
-          <Link to="/gestion/fichas-trimestre" className="btn btn--secondary">
-            Programar ficha en trimestre
-          </Link>
+          isAdmin ? (
+            <Link to="/gestion/fichas-trimestre" className="btn btn--secondary">
+              Programar ficha en trimestre
+            </Link>
+          ) : undefined
         }
       />
 
@@ -318,8 +337,15 @@ function Horarios() {
 
         {!loading && programaciones.length === 0 && !error && (
           <p className="horarios-page__muted">
-            Primero programa una ficha en un trimestre desde{' '}
-            <Link to="/gestion/fichas-trimestre">Fichas por trimestre</Link>.
+            {isAdmin ? (
+              <>
+                Primero programa una ficha en un trimestre desde{' '}
+                <Link to="/gestion/fichas-trimestre">Fichas por trimestre</Link>.
+              </>
+            ) : (
+              'Aún no hay fichas de tu coordinación programadas en un trimestre. '
+              + 'El administrador es quien las programa.'
+            )}
           </p>
         )}
 

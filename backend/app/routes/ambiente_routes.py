@@ -7,7 +7,8 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.ambiente_controller import AmbienteController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_access_scope, get_current_admin, get_current_manager
+from app.core.scope import AccessScope
 from app.schemas.ambiente import (
     AmbienteCreate,
     AmbienteResponse,
@@ -24,15 +25,16 @@ router = APIRouter(
 
 def get_ambiente_controller(
     db: Session = Depends(get_db),
+    scope: AccessScope = Depends(get_access_scope),
 ) -> AmbienteController:
-    service = AmbienteService(db)
+    service = AmbienteService(db, scope)
     return AmbienteController(service)
 
 
 @router.post(
     "",
     response_model=ApiResponse[AmbienteResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_ambiente(
@@ -68,6 +70,14 @@ def get_ambientes(
         default=None,
         description="Filtrar por sede",
     ),
+    coordinacion_uuid: UUID | None = Query(
+        default=None,
+        description="Filtrar por coordinación dueña del ambiente",
+    ),
+    sin_coordinacion: bool | None = Query(
+        default=None,
+        description="true = solo los ambientes sin coordinación asignada",
+    ),
     controller: AmbienteController = Depends(
         get_ambiente_controller
     ),
@@ -76,6 +86,8 @@ def get_ambientes(
         page,
         limit,
         sede_uuid=sede_uuid,
+        coordinacion_uuid=coordinacion_uuid,
+        sin_coordinacion=sin_coordinacion,
     )
 
     return ApiResponse(
@@ -124,7 +136,7 @@ def get_ambiente(
 @router.put(
     "/{ambiente_uuid}",
     response_model=ApiResponse[AmbienteResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_ambiente(
     ambiente_uuid: UUID,
@@ -147,7 +159,7 @@ def update_ambiente(
 @router.delete(
     "/{ambiente_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva el ambiente (eliminación lógica).",
 )
 def delete_ambiente(
@@ -162,7 +174,7 @@ def delete_ambiente(
 @router.patch(
     "/{ambiente_uuid}/activate",
     response_model=ApiResponse[AmbienteResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_ambiente(
     ambiente_uuid: UUID,

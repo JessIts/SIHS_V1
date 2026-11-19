@@ -6,6 +6,7 @@ from fastapi import Cookie, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.scope import UNRESTRICTED, AccessScope
 from app.core.exceptions import (
     ForbiddenException,
     UnauthorizedException,
@@ -83,7 +84,7 @@ MANAGER_ROLES = (
 def get_current_manager(
     user=Depends(get_current_user),
 ):
-    """Admin o coordinador: gestionan los datos académicos (no personales)."""
+    """Admin o coordinador. El coordinador solo consulta y programa horarios."""
 
     if user.role not in MANAGER_ROLES:
         raise ForbiddenException(
@@ -91,3 +92,18 @@ def get_current_manager(
         )
 
     return user
+
+
+def get_access_scope(
+    user=Depends(get_current_manager),
+) -> AccessScope:
+    if user.role == UserRole.ADMIN:
+        return UNRESTRICTED
+
+    if user.coordinacion_id is None:
+        raise ForbiddenException(
+            "Tu usuario de coordinador no tiene una coordinación asignada. "
+            "Pide a un administrador que te asigne una."
+        )
+
+    return AccessScope(coordinacion_id=user.coordinacion_id)

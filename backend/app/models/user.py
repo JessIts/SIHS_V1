@@ -1,8 +1,13 @@
-from sqlalchemy import String, Enum as SAEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, String, Enum as SAEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
 from app.models.roles import UserRole
+
+if TYPE_CHECKING:
+    from app.models.coordinacion import Coordinacion
 
 class User(BaseModel):
 
@@ -46,4 +51,15 @@ class User(BaseModel):
         nullable=False,
         default=UserRole.USER,
         server_default=UserRole.USER.value,
-    )   
+    )
+
+    # Solo aplica a los coordinadores: la coordinación que gestionan.
+    coordinacion_id: Mapped[int | None] = mapped_column(
+        ForeignKey("coordinaciones.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    coordinacion: Mapped["Coordinacion | None"] = relationship(
+        lazy="joined",
+    )

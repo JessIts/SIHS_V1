@@ -1,7 +1,9 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.scope import UNRESTRICTED, AccessScope
 from app.models.ambiente import Ambiente
+from app.models.coordinacion import Coordinacion
 from app.models.enums import EstadoTrimestre
 from app.models.ficha import Ficha
 from app.models.ficha_trimestre import FichaTrimestre
@@ -14,15 +16,46 @@ from app.services.horario_service import HorarioService
 
 
 class DashboardService:
-    """Resumen para los tableros de administración y coordinación."""
+    """
+    Resumen para los tableros de administración y coordinación.
+    Para un coordinador, ambientes, programas, fichas, horarios y
+    programaciones se limitan a su coordinación.
+    """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, scope: AccessScope = UNRESTRICTED):
         self.db = db
+        self.scope = scope
+
+    def _contar(self, model, *conditions, solo_activos: bool = True) -> int:
+        statement = select(func.count()).select_from(model)
+
+        if solo_activos:
+            statement = statement.where(model.is_active.is_(True))
+
+        if conditions:
+            statement = statement.where(*conditions)
+
+        return self.db.scalar(statement) or 0
 
     def _contar_activos(self, model) -> int:
-        return self.db.scalar(
-            select(func.count()).select_from(model).where(model.is_active.is_(True))
-        ) or 0
+        return self._contar(model)
+
+    def _de_la_coordinacion(self) -> dict:
+        """Condiciones por modelo según el alcance (vacías para el admin)."""
+
+        if not self.scope.restricted:
+            return {"ambiente": [], "programa": [], "ficha": [], "horario": [], "ficha_trimestre": []}
+
+        cid = self.scope.coordinacion_id
+        ficha = Ficha.programa.has(Programa.coordinacion_id == cid)
+
+        return {
+            "ambiente": [Ambiente.coordinacion_id == cid],
+            "programa": [Programa.coordinacion_id == cid],
+            "ficha": [ficha],
+            "ficha_trimestre": [FichaTrimestre.ficha.has(ficha)],
+            "horario": [Horario.ficha_trimestre.has(FichaTrimestre.ficha.has(ficha))],
+        }
 
     def get_resumen(self) -> dict:
         usuarios = dict(
@@ -44,6 +77,8 @@ class DashboardService:
             ).all()
         )
 
+        alcance = self._de_la_coordinacion()
+
         programaciones = []
 
         if trimestres_vigentes:
@@ -52,6 +87,7 @@ class DashboardService:
                 .where(
                     FichaTrimestre.is_active.is_(True),
                     FichaTrimestre.trimestre_id.in_([t.id for t in trimestres_vigentes]),
+                    *alcance["ficha_trimestre"],
                 )
             ).unique().all()
 
@@ -75,14 +111,22 @@ class DashboardService:
                 key=lambda p: (p["horas_programadas"] / p["horas_semanales"], p["ficha"])
             )
 
+        coordinacion = None
+
+        if self.scope.restricted:
+            coordinacion = self.db.scalar(
+                select(Coordinacion.nombre).where(Coordinacion.id == self.scope.coordinacion_id)
+            )
+
         return {
+            "coordinacion": coordinacion,
             "conteos": {
                 "sedes": self._contar_activos(Sede),
-                "ambientes": self._contar_activos(Ambiente),
-                "programas": self._contar_activos(Programa),
-                "fichas": self._contar_activos(Ficha),
+                "ambientes": self._contar(Ambiente, *alcance["ambiente"]),
+                "programas": self._contar(Programa, *alcance["programa"]),
+                "fichas": self._contar(Ficha, *alcance["ficha"]),
                 "trimestres": self._contar_activos(Trimestre),
-                "horarios": self.db.scalar(select(func.count()).select_from(Horario)) or 0,
+                "horarios": self._contar(Horario, *alcance["horario"], solo_activos=False),
             },
             "usuarios": {role.value: total for role, total in usuarios.items()},
             "trimestres_activos": [

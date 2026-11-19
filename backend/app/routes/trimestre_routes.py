@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.trimestre_controller import TrimestreController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.trimestre import (
     TrimestreCreate,
     TrimestreResponse,
@@ -32,7 +32,7 @@ def get_trimestre_controller(
 @router.post(
     "",
     response_model=ApiResponse[TrimestreResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_trimestre(
@@ -119,7 +119,7 @@ def get_trimestre(
 @router.put(
     "/{trimestre_uuid}",
     response_model=ApiResponse[TrimestreResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_trimestre(
     trimestre_uuid: UUID,
@@ -142,7 +142,7 @@ def update_trimestre(
 @router.delete(
     "/{trimestre_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva el trimestre (eliminación lógica).",
 )
 def delete_trimestre(
@@ -157,7 +157,7 @@ def delete_trimestre(
 @router.patch(
     "/{trimestre_uuid}/activate",
     response_model=ApiResponse[TrimestreResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_trimestre(
     trimestre_uuid: UUID,

@@ -93,6 +93,8 @@ export interface ProgramacionResumen {
 }
 
 export interface DashboardResumen {
+  /** Nombre de la coordinación cuando el resumen es de un coordinador */
+  coordinacion: string | null
   conteos: {
     sedes: number
     ambientes: number
