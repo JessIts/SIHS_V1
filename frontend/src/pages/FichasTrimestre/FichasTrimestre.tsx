@@ -6,6 +6,7 @@ import CrudPage, {
 } from '../../components/crud/CrudPage/CrudPage'
 import type { FieldConfig } from '../../components/crud/EntityForm/EntityForm'
 
+import { usePermissions } from '../../hooks/usePermissions'
 import { fichasTrimestreService } from '../../services/academic.service'
 import type { FichaTrimestre } from '../../types/academic.types'
 import { formatPeriodo, formatTrimestre } from '../../utils/format'
@@ -48,10 +49,16 @@ const filters: CrudFilter[] = [
 ]
 
 function FichasTrimestre() {
+  const { isAdmin } = usePermissions()
+
   return (
     <CrudPage
       title="Fichas por trimestre"
-      description="Programa cada ficha en un trimestre del calendario con sus horas semanales. Es el encabezado del horario."
+      description={
+        isAdmin
+          ? 'Programa cada ficha en un trimestre del calendario con sus horas semanales. Es el encabezado del horario.'
+          : 'Programaciones de las fichas de tu coordinación en cada trimestre (solo consulta).'
+      }
       entityName="programación"
       female
       service={fichasTrimestreService}

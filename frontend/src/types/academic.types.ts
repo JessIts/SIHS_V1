@@ -116,12 +116,15 @@ export interface Ambiente extends BaseEntity {
   nombre: string
   capacidad: number | null
   sede: SedeBrief
+  /** Coordinación dueña del ambiente (null = sin asignar) */
+  coordinacion: CoordinacionBrief | null
 }
 
 export interface AmbienteCreate {
   sede_uuid: string
   nombre: string
   capacidad: number | null
+  coordinacion_uuid: string | null
 }
 
 export interface Coordinacion extends BaseEntity {

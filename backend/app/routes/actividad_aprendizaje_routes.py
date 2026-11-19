@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.actividad_aprendizaje_controller import ActividadAprendizajeController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.actividad_aprendizaje import (
     ActividadAprendizajeCreate,
     ActividadAprendizajeResponse,
@@ -32,7 +32,7 @@ def get_actividad_aprendizaje_controller(
 @router.post(
     "",
     response_model=ApiResponse[ActividadAprendizajeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_actividad_aprendizaje(
@@ -124,7 +124,7 @@ def get_actividad_aprendizaje(
 @router.put(
     "/{actividad_aprendizaje_uuid}",
     response_model=ApiResponse[ActividadAprendizajeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_actividad_aprendizaje(
     actividad_aprendizaje_uuid: UUID,
@@ -147,7 +147,7 @@ def update_actividad_aprendizaje(
 @router.delete(
     "/{actividad_aprendizaje_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva la actividad de aprendizaje (eliminación lógica).",
 )
 def delete_actividad_aprendizaje(
@@ -162,7 +162,7 @@ def delete_actividad_aprendizaje(
 @router.patch(
     "/{actividad_aprendizaje_uuid}/activate",
     response_model=ApiResponse[ActividadAprendizajeResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_actividad_aprendizaje(
     actividad_aprendizaje_uuid: UUID,

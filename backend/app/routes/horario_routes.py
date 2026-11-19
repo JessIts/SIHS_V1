@@ -7,7 +7,8 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.horario_controller import HorarioController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_access_scope, get_current_manager
+from app.core.scope import AccessScope
 from app.schemas.horario import (
     HorarioCreate,
     HorarioGrilla,
@@ -25,8 +26,10 @@ router = APIRouter(
 
 def get_horario_controller(
     db: Session = Depends(get_db),
+    scope: AccessScope = Depends(get_access_scope),
 ) -> HorarioController:
-    service = HorarioService(db)
+    # Admin: todos los horarios. Coordinador: solo los de su coordinación.
+    service = HorarioService(db, scope)
     return HorarioController(service)
 
 

@@ -36,7 +36,20 @@ class Ambiente(BaseModel):
         nullable=True,
     )
 
+    # Coordinación dueña del ambiente: solo ella puede programar clases en él.
+    # NULL = sin asignar (solo el administrador puede usarlo).
+    coordinacion_id: Mapped[int | None] = mapped_column(
+        ForeignKey("coordinaciones.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     sede: Mapped["Sede"] = relationship(
+        back_populates="ambientes",
+        lazy="joined",
+    )
+
+    coordinacion: Mapped["Coordinacion | None"] = relationship(
         back_populates="ambientes",
         lazy="joined",
     )

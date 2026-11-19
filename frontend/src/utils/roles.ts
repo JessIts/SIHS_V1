@@ -9,8 +9,10 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 /**
- * Roles que pueden modificar datos que NO son personales
- * (sedes, programas, fichas, horarios...).
+ * Roles que entran a las vistas de gestión:
+ *  - admin: registra y modifica todo.
+ *  - coordinador: solo registra horarios de su coordinación;
+ *    el resto (fichas, ambientes...) lo consulta.
  */
 export const MANAGER_ROLES: UserRole[] = [
   'admin',
@@ -27,4 +29,13 @@ export const HOME_BY_ROLE: Record<UserRole, string> = {
 
 export function isManager(role?: UserRole): boolean {
   return role !== undefined && MANAGER_ROLES.includes(role)
+}
+
+export function isAdmin(role?: UserRole): boolean {
+  return role === 'admin'
+}
+
+/** Pueden registrar, editar y eliminar casillas de horario. */
+export function canScheduleHorarios(role?: UserRole): boolean {
+  return isManager(role)
 }

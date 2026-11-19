@@ -95,11 +95,17 @@ class BaseRepository(Generic[ModelT]):
 
         return items, total
 
-    def get_inactive(self) -> list[ModelT]:
+    def get_inactive(
+        self,
+        conditions: list | None = None,
+    ) -> list[ModelT]:
 
         statement = (
             select(self.model)
-            .where(self.model.is_active.is_(False))
+            .where(
+                self.model.is_active.is_(False),
+                *(conditions or []),
+            )
             .order_by(*self.default_order())
         )
 

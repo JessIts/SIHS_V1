@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.jornada_controller import JornadaController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.jornada import (
     JornadaCreate,
     JornadaResponse,
@@ -32,7 +32,7 @@ def get_jornada_controller(
 @router.post(
     "",
     response_model=ApiResponse[JornadaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_jornada(
@@ -119,7 +119,7 @@ def get_jornada(
 @router.put(
     "/{jornada_uuid}",
     response_model=ApiResponse[JornadaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_jornada(
     jornada_uuid: UUID,
@@ -142,7 +142,7 @@ def update_jornada(
 @router.delete(
     "/{jornada_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva la jornada (eliminación lógica).",
 )
 def delete_jornada(
@@ -157,7 +157,7 @@ def delete_jornada(
 @router.patch(
     "/{jornada_uuid}/activate",
     response_model=ApiResponse[JornadaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_jornada(
     jornada_uuid: UUID,

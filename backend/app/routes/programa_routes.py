@@ -7,7 +7,7 @@ from app.common.pagination import PaginatedResponse
 from app.common.responses import ApiResponse
 from app.controllers.programa_controller import ProgramaController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_current_admin, get_current_manager
 from app.schemas.programa import (
     ProgramaCreate,
     ProgramaResponse,
@@ -32,7 +32,7 @@ def get_programa_controller(
 @router.post(
     "",
     response_model=ApiResponse[ProgramaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_programa(
@@ -124,7 +124,7 @@ def get_programa(
 @router.put(
     "/{programa_uuid}",
     response_model=ApiResponse[ProgramaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def update_programa(
     programa_uuid: UUID,
@@ -147,7 +147,7 @@ def update_programa(
 @router.delete(
     "/{programa_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
     summary="Desactiva el programa (eliminación lógica).",
 )
 def delete_programa(
@@ -162,7 +162,7 @@ def delete_programa(
 @router.patch(
     "/{programa_uuid}/activate",
     response_model=ApiResponse[ProgramaResponse],
-    dependencies=[Depends(get_current_manager)],
+    dependencies=[Depends(get_current_admin)],
 )
 def activate_programa(
     programa_uuid: UUID,

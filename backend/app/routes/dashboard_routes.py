@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.common.responses import ApiResponse
 from app.controllers.dashboard_controller import DashboardController
 from app.core.database import get_db
-from app.core.dependencies import get_current_manager
+from app.core.dependencies import get_access_scope, get_current_manager
+from app.core.scope import AccessScope
 from app.schemas.dashboard import DashboardResumen
 from app.services.dashboard_service import DashboardService
 
@@ -17,8 +18,9 @@ router = APIRouter(
 
 def get_dashboard_controller(
     db: Session = Depends(get_db),
+    scope: AccessScope = Depends(get_access_scope),
 ) -> DashboardController:
-    service = DashboardService(db)
+    service = DashboardService(db, scope)
     return DashboardController(service)
 
 

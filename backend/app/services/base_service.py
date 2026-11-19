@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.pagination import build_page
+from app.core.scope import UNRESTRICTED, AccessScope
 from app.core.exceptions import (
     ConflictException,
     NotFoundException,
@@ -35,6 +36,8 @@ class BaseService(Generic[ModelT]):
       dependents         -> [(relación, mensaje)] que impiden desactivar
       build_entity()     -> crea el modelo a partir del schema
       apply_update()     -> aplica los cambios (por defecto setattr)
+      scope_conditions() -> filtros del alcance del usuario (coordinación);
+                            se aplican a todas las lecturas
     """
 
     repository_class: type[BaseRepository]
@@ -43,9 +46,29 @@ class BaseService(Generic[ModelT]):
     constraint_messages: dict[str, str] = {}
     dependents: list[tuple[str, str]] = []
 
-    def __init__(self, db: Session):
+    def __init__(
+        self,
+        db: Session,
+        scope: AccessScope = UNRESTRICTED,
+    ):
         self.db = db
+        self.scope = scope
         self.repository = self.repository_class(db)
+
+    # ------------------------------------------------------------------
+    # Alcance (coordinación del usuario)
+    # ------------------------------------------------------------------
+    def scope_conditions(self) -> list:
+        """
+        Condiciones que limitan los datos visibles para un coordinador.
+        Los servicios con datos por coordinación (ambientes, fichas,
+        horarios...) lo sobrescriben usando self.scope.coordinacion_id.
+        """
+
+        return []
+
+    def _scope(self) -> list:
+        return self.scope_conditions() if self.scope.restricted else []
 
     # ------------------------------------------------------------------
     # Mensajes
@@ -65,9 +88,12 @@ class BaseService(Generic[ModelT]):
     # ------------------------------------------------------------------
     def get(self, entity_uuid: UUID) -> ModelT:
 
-        entity = self.repository.get_by_uuid(
-            entity_uuid=entity_uuid,
-            include_inactive=False,
+        model = self.repository.model
+
+        entity = self.repository.get_one_by(
+            model.uuid == entity_uuid,
+            model.is_active.is_(True),
+            *self._scope(),
         )
 
         if not entity:
@@ -88,7 +114,7 @@ class BaseService(Generic[ModelT]):
             page=page,
             limit=limit,
             include_inactive=False,
-            conditions=conditions,
+            conditions=list(conditions or []) + self._scope(),
         )
 
         return build_page(items, total, page, limit)
@@ -119,7 +145,7 @@ class BaseService(Generic[ModelT]):
         return []
 
     def get_inactive(self) -> list[ModelT]:
-        return self.repository.get_inactive()
+        return self.repository.get_inactive(conditions=self._scope())
 
     # ------------------------------------------------------------------
     # Escritura

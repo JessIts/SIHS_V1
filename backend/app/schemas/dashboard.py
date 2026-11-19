@@ -33,6 +33,8 @@ class ProgramacionResumen(BaseModel):
 
 
 class DashboardResumen(BaseModel):
+    # Nombre de la coordinación cuando el resumen es de un coordinador
+    coordinacion: str | None = None
     conteos: ConteosDashboard
     usuarios: UsuariosPorRol
     trimestres_activos: list[MiTrimestre]
