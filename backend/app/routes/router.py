@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.routes.user_routes import router as user_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.register_routes import router as register_router
+from app.routes.password_reset_routes import router as password_reset_router
 
 from app.routes.sede_routes import router as sede_router
 from app.routes.ambiente_routes import router as ambiente_router
@@ -32,6 +33,8 @@ api_router.include_router(user_router)
 api_router.include_router(auth_router)
 
 api_router.include_router(register_router)
+
+api_router.include_router(password_reset_router)
 
 # Infraestructura
 api_router.include_router(sede_router)

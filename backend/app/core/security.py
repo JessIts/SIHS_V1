@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -51,3 +53,19 @@ def decode_access_token(token: str) -> dict:
         settings.jwt_secret_key,
         algorithms=[settings.jwt_algorithm],
     )
+
+
+def generate_reset_token() -> tuple[str, str]:
+    """
+    Token de recuperación de contraseña.
+    Devuelve (token, hash): el token viaja en el enlace del correo y en
+    la base de datos solo se guarda su hash, igual que con las contraseñas.
+    """
+
+    token = secrets.token_urlsafe(32)
+
+    return token, hash_reset_token(token)
+
+
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
