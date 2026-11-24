@@ -15,3 +15,4 @@ from app.models.trimestre import Trimestre  # noqa: F401
 from app.models.ficha import Ficha, ficha_aprendiz  # noqa: F401
 from app.models.ficha_trimestre import FichaTrimestre  # noqa: F401
 from app.models.horario import Horario  # noqa: F401
+from app.models.password_reset_token import PasswordResetToken  # noqa: F401

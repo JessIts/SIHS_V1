@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import Input from '../../components/ui/Input/Input'
 import Button from '../../components/ui/Button/Button'
@@ -90,6 +90,13 @@ function Login() {
           required
         />
 
+        <Link
+          to="/forgot-password"
+          className="login-page__forgot"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+
         {error && (
           <p className="login-page__error">
             {error}
@@ -115,4 +122,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Login
