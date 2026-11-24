@@ -12,6 +12,8 @@ import HomeRedirect from '../components/common/HomeRedirect/HomeRedirect'
 
 import Login from '../pages/Login/Login'
 import Register from '../pages/Register/Register'
+import ForgotPassword from '../pages/ForgotPassword/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword/ResetPassword'
 import Dashboard from '../pages/Dashboard/Dashboard'
 import Users from '../pages/Users/Users'
 import CreateUser from '../pages/CreateUser/CreateUser'
@@ -58,6 +60,17 @@ function AppRoutes() {
           <Route
             path="/register"
             element={<Register />}
+          />
+
+          {/* Recuperación de contraseña */}
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
+
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
           />
         </Route>
 

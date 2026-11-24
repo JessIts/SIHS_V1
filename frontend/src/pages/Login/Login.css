@@ -60,3 +60,19 @@
 .login-page__register:hover {
   background: var(--color-background);
 }
+
+.login-page__forgot {
+  align-self: flex-end;
+
+  margin-top: -8px;
+
+  color: var(--color-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-page__forgot:hover {
+  text-decoration: underline;
+}
