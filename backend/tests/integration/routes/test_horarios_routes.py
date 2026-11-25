@@ -11,12 +11,15 @@ from app.core.security import hash_password
 from app.models.roles import UserRole
 from app.models.user import User
 
-
 API = "/api/v1"
 PASSWORD = "Password123!"
 
 # Valores únicos dentro de la sesión de pruebas (orden y horas de las franjas)
 _franja_seq = count(100)
+
+# Cada escenario usa un trimestre (año, número) distinto. Antes se elegía al
+# azar entre 100 años y a veces dos escenarios chocaban (prueba intermitente).
+_trimestre_seq = count(0)
 
 
 def _uid() -> str:
@@ -135,9 +138,11 @@ def escenario(admin_client, db):
         "descripcion": "Seleccionar técnica de evaluación",
     })
 
+    indice_trimestre = next(_trimestre_seq)
+
     trimestre = _post(c, "/trimestres", {
-        "anio": 2000 + int(s, 16) % 100,
-        "numero": int(s, 16) % 4 + 1,
+        "anio": 2000 + indice_trimestre // 4,
+        "numero": indice_trimestre % 4 + 1,
         "fecha_inicio": "2026-07-09",
         "fecha_fin": "2026-09-28",
     })
@@ -270,17 +275,26 @@ def test_crear_casilla_y_choques(admin_client, escenario):
     assert casilla["ficha_trimestre"]["trimestre_ficha"] == 7
 
     # 1) La misma ficha en la misma casilla
-    r = c.post(f"{API}/horarios", json=_casilla(e, instructor_uuid=e["instructor_2"], ambiente_uuid=e["ambiente_b"]["uuid"]))
+    r = c.post(
+        f"{API}/horarios",
+        json=_casilla(e, instructor_uuid=e["instructor_2"], ambiente_uuid=e["ambiente_b"]["uuid"]),
+    )
     assert r.status_code == 409
     assert "La ficha ya tiene una clase" in r.json()["message"]
 
     # 2) El instructor en otra ficha a la misma hora
-    r = c.post(f"{API}/horarios", json=_casilla(e, ficha_trimestre_uuid=e["ft_2"]["uuid"], ambiente_uuid=e["ambiente_b"]["uuid"]))
+    r = c.post(
+        f"{API}/horarios",
+        json=_casilla(e, ficha_trimestre_uuid=e["ft_2"]["uuid"], ambiente_uuid=e["ambiente_b"]["uuid"]),
+    )
     assert r.status_code == 409
     assert "El instructor ya tiene clase" in r.json()["message"]
 
     # 3) El ambiente ocupado por otra ficha
-    r = c.post(f"{API}/horarios", json=_casilla(e, ficha_trimestre_uuid=e["ft_2"]["uuid"], instructor_uuid=e["instructor_2"]))
+    r = c.post(
+        f"{API}/horarios",
+        json=_casilla(e, ficha_trimestre_uuid=e["ft_2"]["uuid"], instructor_uuid=e["instructor_2"]),
+    )
     assert r.status_code == 409
     assert "ya está ocupado" in r.json()["message"]
 
@@ -317,7 +331,11 @@ def test_validaciones_de_casilla(admin_client, escenario, db):
         "coordinacion_uuid": e["programa"]["coordinacion"]["uuid"],
     })
     otra_comp = _post(c, "/competencias", {"programa_uuid": otro_programa["uuid"], "codigo": "X", "descripcion": "xxx"})
-    otro_res = _post(c, "/resultados-aprendizaje", {"competencia_uuid": otra_comp["uuid"], "codigo": "1", "descripcion": "xxx"})
+    otro_res = _post(
+        c,
+        "/resultados-aprendizaje",
+        {"competencia_uuid": otra_comp["uuid"], "codigo": "1", "descripcion": "xxx"},
+    )
 
     r = c.post(f"{API}/horarios", json=_casilla(e, resultado_uuid=otro_res["uuid"]))
     assert r.status_code == 422
@@ -423,7 +441,11 @@ def _otra_coordinacion(c, e: dict) -> dict:
         "coordinacion_uuid": coordinacion["uuid"],
     })
     competencia = _post(c, "/competencias", {"programa_uuid": programa["uuid"], "codigo": "C1", "descripcion": "xxx"})
-    resultado = _post(c, "/resultados-aprendizaje", {"competencia_uuid": competencia["uuid"], "codigo": "01", "descripcion": "xxx"})
+    resultado = _post(
+        c,
+        "/resultados-aprendizaje",
+        {"competencia_uuid": competencia["uuid"], "codigo": "01", "descripcion": "xxx"},
+    )
     ficha = _post(c, "/fichas", {
         "codigo": f"OF{s}",
         "programa_uuid": programa["uuid"],
