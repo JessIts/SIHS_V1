@@ -39,15 +39,21 @@ Es el **4.° backend del programa** y el primero construido en Python. La compar
 
 ## Tecnologías
 
-| Uso | Herramienta |
-|---|---|
-| Framework web | FastAPI 0.141 |
-| ORM y migraciones | SQLAlchemy 2.0 · Alembic |
-| Base de datos | PostgreSQL 16 (psycopg 3) |
-| Validación | Pydantic v2 · pydantic-settings |
-| Seguridad | PyJWT (HS256) · Argon2 |
-| Pruebas | pytest · TestClient · pytest-cov |
-| Linter | ruff (PEP 8 y errores lógicos) |
+| Uso | Herramienta | Versión |
+|---|---|---|
+| Lenguaje | Python | 3.12 o superior |
+| Framework web | FastAPI · Starlette | 0.141 · 1.6 |
+| Servidor | Uvicorn | 0.52 |
+| ORM | SQLAlchemy | 2.0 |
+| Migraciones | Alembic | 1.19 |
+| Base de datos | PostgreSQL · driver psycopg 3 | 16 · 3.3 |
+| Validación y configuración | Pydantic v2 · pydantic-settings · email-validator | 2.13 · 2.15 · 2.3 |
+| Autenticación | PyJWT (HS256) en cookie `httponly` | 2.13 |
+| Contraseñas | Argon2 (`argon2-cffi`) | 25.1 |
+| Pruebas | pytest · TestClient (httpx) · pytest-cov | 9.1 · 0.28 · 7.0 |
+| Linter | ruff | 0.16 |
+
+Las versiones exactas están en `requirements.txt` (producción) y `requirements-dev.txt` (pruebas y linter).
 
 ---
 
@@ -89,37 +95,87 @@ El diagrama completo del sistema está en `../_docs/arquitectura/arquitectura.md
 
 ## Instalación desde cero
 
-Requisitos: Python 3.12+ y PostgreSQL 16.
+### Requisitos
+
+- **Python 3.12 o superior.** Compruébalo con `python --version`.
+- **PostgreSQL 16**, con un usuario que pueda crear bases de datos (pgAdmin sirve para gestionarlo).
+- **Git.** En Windows se recomienda usar **Git Bash** como terminal.
+
+### Pasos
+
+Todos los comandos se ejecutan dentro de la carpeta `backend`.
+
+**1. Crear y activar el entorno virtual**
 
 ```bash
-cd backend
-
-# 1. Entorno virtual
 python -m venv .venv
-source .venv/Scripts/activate      # Windows (Git Bash)
-# .\.venv\Scripts\Activate.ps1     # Windows (PowerShell)
-# source .venv/bin/activate        # Linux / macOS
+source .venv/Scripts/activate        # Windows (Git Bash)
+# .\.venv\Scripts\Activate.ps1       # Windows (PowerShell)
+# source .venv/bin/activate          # Linux / macOS
+```
 
-# 2. Dependencias (requirements-dev.txt incluye las de pruebas y el linter)
+Sabrás que está activo porque la terminal muestra `(.venv)` al inicio de la línea. Actívalo cada vez que abras una terminal nueva.
+
+**2. Instalar las dependencias**
+
+```bash
 pip install -r requirements-dev.txt
+```
 
-# 3. Variables de entorno
-cp .env.example .env               # completar DATABASE_URL y JWT_SECRET_KEY
+`requirements-dev.txt` incluye las dependencias de `requirements.txt` más las de pruebas y el linter. En producción basta con `requirements.txt`.
 
-# 4. Base de datos
-createdb sihs                      # o desde pgAdmin
+**3. Configurar las variables de entorno**
+
+```bash
+cp .env.example .env
+```
+
+Abre `.env` y completa por lo menos:
+- `DATABASE_URL`, por ejemplo `postgresql+psycopg://postgres:tu_clave@localhost:5432/sihs`.
+- `JWT_SECRET_KEY`, de al menos 32 caracteres. Para generar una: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+
+**4. Crear la base de datos y aplicar las migraciones**
+
+```bash
+createdb -U postgres sihs            # o créala desde pgAdmin
 alembic upgrade head
+```
 
-# 5. Datos de prueba (opcional; idempotente)
+Las migraciones crean las tablas, los constraints y el trigger `fn_validar_horario`.
+
+**5. Cargar datos de prueba (opcional)**
+
+```bash
 python -m scripts.seed_horarios
+```
 
-# 6. Administrador: registra un usuario (pantalla /register o POST /auth/register)
-#    y luego promuévelo
-python -m scripts.create_admin tu_correo@example.com
+Carga 30 registros por entidad y un coordinador. Se puede ejecutar varias veces sin duplicar datos.
 
-# 7. Ejecutar
+**6. Crear un administrador**
+
+El script no crea usuarios: promueve uno que ya existe.
+1. Registra un usuario desde la pantalla `/register` del frontend o con `POST /api/v1/auth/register`.
+2. Promuévelo:
+   ```bash
+   python -m scripts.create_admin tu_correo@example.com
+   ```
+
+**7. Ejecutar la API**
+
+```bash
 uvicorn app.main:app --reload
 ```
+
+Queda lista cuando la consola muestra `Uvicorn running on http://127.0.0.1:8000`. La documentación interactiva (Swagger) está en `http://localhost:8000/docs`.
+
+### Problemas comunes
+
+| Síntoma | Solución |
+|---|---|
+| PowerShell no deja activar el entorno ("la ejecución de scripts está deshabilitada") | Ejecuta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, o usa Git Bash |
+| `pip install` falla leyendo `requirements.txt` | El archivo debe estar en UTF-8. En PowerShell no lo regeneres con `pip freeze > requirements.txt`, porque lo guarda en UTF-16 |
+| `connection refused` al migrar o al iniciar | PostgreSQL no está corriendo, o `DATABASE_URL` tiene mal el puerto, el usuario o la clave |
+| El login funciona en Swagger pero no en el frontend | Abre el frontend en `http://localhost:5173`, no en `127.0.0.1`: la cookie y CORS dependen del nombre del host |
 
 **Variables de entorno** (detalle en `.env.example`):
 
