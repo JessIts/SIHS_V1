@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 import jwt
 
 from app.core.config import settings
 from app.models.user import User
 
+
 def test_login_success(client, db):
     response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Login",
             "email": "login@example.com",
@@ -30,12 +32,17 @@ def test_login_success(client, db):
 
     data = response.json()
 
-    assert data["data"]["access_token"]
-    assert data["data"]["token_type"] == "bearer"
-    
+    # El JWT viaja en una cookie httponly, nunca en el cuerpo
+    assert data["data"]["authenticated"] is True
+    assert "access_token" not in data["data"]
+    assert response.cookies.get("access_token")
+
+    set_cookie = response.headers["set-cookie"].lower()
+    assert "httponly" in set_cookie
+
 def test_login_invalid_password(client):
     client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Password",
             "email": "wrong-password@example.com",
@@ -59,7 +66,7 @@ def test_login_invalid_password(client):
 
     assert data["success"] is False
     assert data["message"] == "Credenciales inválidas."
-    
+
 def test_login_user_not_found(client):
     response = client.post(
         "/api/v1/auth/login",
@@ -75,10 +82,10 @@ def test_login_user_not_found(client):
 
     assert data["success"] is False
     assert data["message"] == "Credenciales inválidas."
-    
+
 def test_login_inactive_user(client, db):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Inactivo",
             "email": "inactive@example.com",
@@ -118,7 +125,7 @@ def test_login_inactive_user(client, db):
 
 def test_login_token_contains_correct_user_uuid(client, db):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario JWT",
             "email": "jwt@example.com",
@@ -142,7 +149,7 @@ def test_login_token_contains_correct_user_uuid(client, db):
 
     assert response.status_code == 200
 
-    token = response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
 
     payload = jwt.decode(
         token,
@@ -154,7 +161,7 @@ def test_login_token_contains_correct_user_uuid(client, db):
 
 def test_login_token_can_access_my_profile(client):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Token",
             "email": "token@example.com",
@@ -176,12 +183,12 @@ def test_login_token_can_access_my_profile(client):
 
     assert response.status_code == 200
 
-    token = response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
 
     profile_response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {token}",
+            "Cookie": f"access_token={token}",
         },
     )
 
@@ -193,7 +200,7 @@ def test_login_token_can_access_my_profile(client):
 
 def test_login_invalid_password_does_not_reveal_user_existence(client):
     client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Seguridad",
             "email": "security@example.com",
@@ -230,7 +237,7 @@ def test_login_invalid_password_does_not_reveal_user_existence(client):
 
 def test_login_inactive_user_does_not_return_access_token(client, db):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Inactivo Token",
             "email": "inactive-token@example.com",
@@ -268,11 +275,12 @@ def test_login_inactive_user_does_not_return_access_token(client, db):
     data = response.json()
 
     assert data["success"] is False
-    assert "access_token" not in data.get("data", {})
+    assert "access_token" not in (data.get("data") or {})
+    assert "access_token" not in response.cookies
 
 def test_login_token_contains_required_claims(client):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Claims",
             "email": "claims@example.com",
@@ -296,7 +304,7 @@ def test_login_token_contains_required_claims(client):
 
     assert response.status_code == 200
 
-    token = response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
 
     payload = jwt.decode(
         token,
@@ -308,11 +316,11 @@ def test_login_token_contains_required_claims(client):
     assert "exp" in payload
 
     assert payload["sub"] == user_uuid
-    assert payload["exp"] > datetime.now(timezone.utc).timestamp()
+    assert payload["exp"] > datetime.now(UTC).timestamp()
 
 def test_login_token_has_configured_algorithm(client):
     client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Algorithm",
             "email": "algorithm@example.com",
@@ -332,7 +340,7 @@ def test_login_token_has_configured_algorithm(client):
 
     assert response.status_code == 200
 
-    token = response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
 
     header = jwt.get_unverified_header(token)
 
@@ -340,7 +348,7 @@ def test_login_token_has_configured_algorithm(client):
 
 def test_login_token_expiration_is_configured_correctly(client):
     client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Expiracion",
             "email": "expiration@example.com",
@@ -350,7 +358,7 @@ def test_login_token_expiration_is_configured_correctly(client):
         },
     )
 
-    before_login = int(datetime.now(timezone.utc).timestamp())
+    before_login = int(datetime.now(UTC).timestamp())
 
     response = client.post(
         "/api/v1/auth/login",
@@ -362,9 +370,9 @@ def test_login_token_expiration_is_configured_correctly(client):
 
     assert response.status_code == 200
 
-    after_login = int(datetime.now(timezone.utc).timestamp())
+    after_login = int(datetime.now(UTC).timestamp())
 
-    token = response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
 
     payload = jwt.decode(
         token,
