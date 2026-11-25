@@ -18,8 +18,8 @@
 | DT-07 | Frontend sin pruebas unitarias; solo 2 pruebas E2E | Los cambios en componentes compartidos (`CrudPage`, `HorarioGrid`) no tienen protección | Media | M | Vitest + Testing Library para los componentes compartidos, y E2E de la grilla de horarios |
 | DT-08 | El usuario del registro público queda con rol `user` hasta que el admin lo cambie, sin aviso | Nuevos usuarios que no ven nada útil y un admin que no se entera | Baja | M | Listado de "pendientes de rol" en el dashboard del admin |
 | DT-09 | El correo se envía en segundo plano dentro del mismo proceso, sin reintentos | Si el SMTP falla, el enlace se pierde (queda solo en el log) | Baja | M | Cola de tareas con reintentos, o un proveedor de correo con API |
-| DT-10 | `frontend/README.md` sigue siendo la plantilla de Vite | Documentación confusa para quien llega al repositorio | Baja | S | Reemplazarlo por instrucciones del frontend o eliminarlo |
 | DT-11 | La migración `d8f3b61e9a42` no se puede revertir | Un `downgrade` no recupera cómo estaba escrito cada correo | Baja | — | Aceptada: la normalización es irreversible por naturaleza |
+| DT-12 | Usuario y contraseña de PostgreSQL escritos en `docker-compose.yml` | Válido solo para desarrollo local; en un servidor quedarían expuestos en el repositorio | Media | S | Leerlos de un `.env` en la raíz (`${POSTGRES_PASSWORD}`) que no se suba a Git, con un `.env.example` de referencia |
 
 ## Deuda pagada en T6
 
@@ -34,3 +34,4 @@
 | `JWT_SECRET_KEY` sin guía de longitud en `.env.example` | Comentario con el mínimo de 32 caracteres y el comando para generar una clave |
 | 3 errores de ESLint en el frontend (Fast Refresh en `AuthContext.tsx` y `setState` dentro de efectos en `Horarios.tsx` y `ResetPassword.tsx`) | Corregidos: contexto y hook en archivos separados, y estados de carga calculados en el render. `pnpm lint` queda en 0 errores |
 | Prueba E2E de fichas desactualizada tras el cambio de roles (DEF-05) | Sesión de admin y verificación por API, que no depende de la paginación de la tabla |
+| `frontend/README.md` desactualizado (describía solo el login) (antes DT-10) | Reescrito con stack, instalación, scripts, pantallas por rol y estructura |

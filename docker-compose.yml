@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16
+    container_name: sihs-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sihs
+      POSTGRES_PASSWORD: sihs_password
+      POSTGRES_DB: sihs
+    ports:
+      - "5434:5432"                  # desarrollo
+    volumes:
+      - sihs_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sihs -d sihs"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  db-test:
+    image: postgres:16
+    container_name: sihs-db-test
+    environment:
+      POSTGRES_USER: sihs
+      POSTGRES_PASSWORD: sihs_password
+      POSTGRES_DB: sihs_test
+    ports:
+      - "5435:5432"                  # pruebas
+    tmpfs:
+      - /var/lib/postgresql/data     # en memoria: se borra al apagar
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sihs -d sihs_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: sihs-backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sihs:sihs_password@db:5432/sihs
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  sihs_pgdata:

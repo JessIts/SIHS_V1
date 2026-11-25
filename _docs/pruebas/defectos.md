@@ -21,7 +21,7 @@
 
 - **Severidad:** Alta. El módulo de autenticación quedó sin pruebas confiables: 41 de 122 fallaban, y 4 pasaban sin validar nada.
 - **Módulo:** `backend/tests` (autenticación, usuarios y dependencias).
-- **Introducido por:** el commit `7f4b4cf` "Se actualizó la sesión local por una sesión con HttpCookie" y el cambio del registro público a `/auth/register`.
+- **Introducido por:** el cambio de la sesión local a una sesión con cookie httponly y el cambio del registro público a `/auth/register`.
 
 **Pasos para reproducir:**
 1. `pytest` en `backend`.

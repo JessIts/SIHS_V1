@@ -82,7 +82,7 @@ Desde la corrección, cada prueba de sesión verifica la cookie httponly real.
 **Defecto de producto:** DEF-02 era un error real del sistema, no de las pruebas. Se encontró con casos negativos (escribir el mismo correo con otras mayúsculas) que no estaban en la suite.
 
 **Proceso:**
-- Ninguna prueba se ejecutaba de forma rutinaria después de cada cambio, y por eso DEF-01 pasó inadvertido desde el cambio a cookie (commit `7f4b4cf`) hasta esta ejecución.
+- Ninguna prueba se ejecutaba de forma rutinaria después de cada cambio, y por eso DEF-01 pasó inadvertido desde el cambio a cookie hasta esta ejecución.
 - Acción: ejecutar `pytest` y `ruff check .` antes de cada merge a `development`. Queda como deuda técnica automatizarlo con GitHub Actions.
 
 ## 7. Ejecuciones locales (equipo del desarrollador, Windows)

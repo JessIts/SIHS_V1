@@ -2,7 +2,7 @@
 
 API REST del Sistema de Información de Horarios (SIHS). Gestiona la programación de clases de las fichas de formación por trimestre, día y franja. Impide choques de ficha, instructor y ambiente, y controla el acceso por rol y por coordinación.
 
-Es el **4.° backend del programa** y el primero construido en Python. La comparación con los anteriores está en `../_docs/cierre/reflexion-backends.md`.
+Es el backend que acompañó todo el programa: se desarrolló de forma continua, siempre con la misma arquitectura por capas. Su evolución está en `../_docs/cierre/reflexion-backend.md`.
 
 ---
 
@@ -12,11 +12,12 @@ Es el **4.° backend del programa** y el primero construido en Python. La compar
 2. [Tecnologías](#tecnologías)
 3. [Arquitectura](#arquitectura)
 4. [Instalación desde cero](#instalación-desde-cero)
-5. [Autenticación y roles](#autenticación-y-roles)
-6. [Documentación de la API](#documentación-de-la-api)
-7. [Pruebas](#pruebas)
-8. [Calidad de código](#calidad-de-código)
-9. [Estructura de carpetas](#estructura-de-carpetas)
+5. [Ejecutar con Docker](#ejecutar-con-docker)
+6. [Autenticación y roles](#autenticación-y-roles)
+7. [Documentación de la API](#documentación-de-la-api)
+8. [Pruebas](#pruebas)
+9. [Calidad de código](#calidad-de-código)
+10. [Estructura de carpetas](#estructura-de-carpetas)
 
 ---
 
@@ -39,15 +40,21 @@ Es el **4.° backend del programa** y el primero construido en Python. La compar
 
 ## Tecnologías
 
-| Uso | Herramienta |
-|---|---|
-| Framework web | FastAPI 0.141 |
-| ORM y migraciones | SQLAlchemy 2.0 · Alembic |
-| Base de datos | PostgreSQL 16 (psycopg 3) |
-| Validación | Pydantic v2 · pydantic-settings |
-| Seguridad | PyJWT (HS256) · Argon2 |
-| Pruebas | pytest · TestClient · pytest-cov |
-| Linter | ruff (PEP 8 y errores lógicos) |
+| Uso | Herramienta | Versión |
+|---|---|---|
+| Lenguaje | Python | 3.12 o superior |
+| Framework web | FastAPI · Starlette | 0.141 · 1.6 |
+| Servidor | Uvicorn | 0.52 |
+| ORM | SQLAlchemy | 2.0 |
+| Migraciones | Alembic | 1.19 |
+| Base de datos | PostgreSQL · driver psycopg 3 | 16 · 3.3 |
+| Validación y configuración | Pydantic v2 · pydantic-settings · email-validator | 2.13 · 2.15 · 2.3 |
+| Autenticación | PyJWT (HS256) en cookie `httponly` | 2.13 |
+| Contraseñas | Argon2 (`argon2-cffi`) | 25.1 |
+| Pruebas | pytest · TestClient (httpx) · pytest-cov | 9.1 · 0.28 · 7.0 |
+| Linter | ruff | 0.16 |
+
+Las versiones exactas están en `requirements.txt` (producción) y `requirements-dev.txt` (pruebas y linter).
 
 ---
 
@@ -89,37 +96,87 @@ El diagrama completo del sistema está en `../_docs/arquitectura/arquitectura.md
 
 ## Instalación desde cero
 
-Requisitos: Python 3.12+ y PostgreSQL 16.
+### Requisitos
+
+- **Python 3.12 o superior.** Compruébalo con `python --version`.
+- **PostgreSQL 16**, con un usuario que pueda crear bases de datos (pgAdmin sirve para gestionarlo).
+- **Git.** En Windows se recomienda usar **Git Bash** como terminal.
+
+### Pasos
+
+Todos los comandos se ejecutan dentro de la carpeta `backend`.
+
+**1. Crear y activar el entorno virtual**
 
 ```bash
-cd backend
-
-# 1. Entorno virtual
 python -m venv .venv
-source .venv/Scripts/activate      # Windows (Git Bash)
-# .\.venv\Scripts\Activate.ps1     # Windows (PowerShell)
-# source .venv/bin/activate        # Linux / macOS
+source .venv/Scripts/activate        # Windows (Git Bash)
+# .\.venv\Scripts\Activate.ps1       # Windows (PowerShell)
+# source .venv/bin/activate          # Linux / macOS
+```
 
-# 2. Dependencias (requirements-dev.txt incluye las de pruebas y el linter)
+Sabrás que está activo porque la terminal muestra `(.venv)` al inicio de la línea. Actívalo cada vez que abras una terminal nueva.
+
+**2. Instalar las dependencias**
+
+```bash
 pip install -r requirements-dev.txt
+```
 
-# 3. Variables de entorno
-cp .env.example .env               # completar DATABASE_URL y JWT_SECRET_KEY
+`requirements-dev.txt` incluye las dependencias de `requirements.txt` más las de pruebas y el linter. En producción basta con `requirements.txt`.
 
-# 4. Base de datos
-createdb sihs                      # o desde pgAdmin
+**3. Configurar las variables de entorno**
+
+```bash
+cp .env.example .env
+```
+
+Abre `.env` y completa por lo menos:
+- `DATABASE_URL`, por ejemplo `postgresql+psycopg://postgres:tu_clave@localhost:5432/sihs`.
+- `JWT_SECRET_KEY`, de al menos 32 caracteres. Para generar una: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+
+**4. Crear la base de datos y aplicar las migraciones**
+
+```bash
+createdb -U postgres sihs            # o créala desde pgAdmin
 alembic upgrade head
+```
 
-# 5. Datos de prueba (opcional; idempotente)
+Las migraciones crean las tablas, los constraints y el trigger `fn_validar_horario`.
+
+**5. Cargar datos de prueba (opcional)**
+
+```bash
 python -m scripts.seed_horarios
+```
 
-# 6. Administrador: registra un usuario (pantalla /register o POST /auth/register)
-#    y luego promuévelo
-python -m scripts.create_admin tu_correo@example.com
+Carga 30 registros por entidad y un coordinador. Se puede ejecutar varias veces sin duplicar datos.
 
-# 7. Ejecutar
+**6. Crear un administrador**
+
+El script no crea usuarios: promueve uno que ya existe.
+1. Registra un usuario desde la pantalla `/register` del frontend o con `POST /api/v1/auth/register`.
+2. Promuévelo:
+   ```bash
+   python -m scripts.create_admin tu_correo@example.com
+   ```
+
+**7. Ejecutar la API**
+
+```bash
 uvicorn app.main:app --reload
 ```
+
+Queda lista cuando la consola muestra `Uvicorn running on http://127.0.0.1:8000`. La documentación interactiva (Swagger) está en `http://localhost:8000/docs`.
+
+### Problemas comunes
+
+| Síntoma | Solución |
+|---|---|
+| PowerShell no deja activar el entorno ("la ejecución de scripts está deshabilitada") | Ejecuta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, o usa Git Bash |
+| `pip install` falla leyendo `requirements.txt` | El archivo debe estar en UTF-8. En PowerShell no lo regeneres con `pip freeze > requirements.txt`, porque lo guarda en UTF-16 |
+| `connection refused` al migrar o al iniciar | PostgreSQL no está corriendo, o `DATABASE_URL` tiene mal el puerto, el usuario o la clave |
+| El login funciona en Swagger pero no en el frontend | Abre el frontend en `http://localhost:5173`, no en `127.0.0.1`: la cookie y CORS dependen del nombre del host |
 
 **Variables de entorno** (detalle en `.env.example`):
 
@@ -139,6 +196,93 @@ uvicorn app.main:app --reload
 | Coordinador | `coordinacion.mercadeo@example.com` | `Coordinador123*` |
 | Instructor | `carlos.perez@example.com` (y 29 más) | `Instructor123*` |
 | Aprendiz | `sofia.martinez@example.com` (y 29 más) | `Aprendiz123*` |
+
+---
+
+## Ejecutar con Docker
+
+El proyecto trae un `docker-compose.yml` en la raíz con tres servicios. Requisito: **Docker Desktop** instalado y abierto.
+
+| Servicio | Contenedor | Puerto en tu PC | Para qué |
+|---|---|---|---|
+| `db` | `sihs-db` | 5434 | PostgreSQL de desarrollo (base `sihs`). Los datos persisten en el volumen `sihs_pgdata` |
+| `db-test` | `sihs-db-test` | 5435 | PostgreSQL de pruebas (base `sihs_test`). Guarda los datos en memoria y se borra al apagarlo |
+| `backend` | `sihs-backend` | 8000 | La API. Al arrancar aplica las migraciones (`alembic upgrade head`) |
+
+Se usan los puertos 5434 y 5435 para no chocar con un PostgreSQL instalado localmente (por ejemplo, en el 5432 o el 5433).
+
+### Opción A: todo en Docker
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose up --build -d                                        # construye y levanta todo
+docker compose ps                                                   # db debe aparecer "healthy"
+docker compose exec backend python -m scripts.seed_horarios        # datos de ejemplo
+docker compose exec backend python -m scripts.create_admin tu_correo@example.com
+```
+
+La API queda en `http://localhost:8000/docs`, y el frontend se ejecuta como siempre con `pnpm dev`.
+
+- El contenedor del backend toma `JWT_SECRET_KEY`, el SMTP y el resto de variables de `backend/.env`.
+- `DATABASE_URL` la define el compose: apunta a `db:5432`, que es el nombre del servicio dentro de la red de Docker.
+- No tiene `--reload`. Después de cambiar código, reconstrúyelo con `docker compose up --build -d backend`.
+
+### Opción B: base de datos en Docker y backend local (recomendada para desarrollar)
+
+```bash
+docker compose up -d db
+```
+
+En `backend/.env`:
+
+```
+DATABASE_URL=postgresql+psycopg://sihs:sihs_password@localhost:5434/sihs
+```
+
+Luego sigue los pasos 4 a 7 de la instalación (migraciones, seed, admin y `uvicorn --reload`). Así no necesitas PostgreSQL instalado y conservas la recarga automática.
+
+### Pruebas contra la base de Docker
+
+```bash
+docker compose up -d db-test
+```
+
+Define la variable en la terminal y ejecuta pytest:
+
+```powershell
+# PowerShell
+$env:TEST_DATABASE_URL = "postgresql+psycopg://sihs:sihs_password@localhost:5435/sihs_test"
+pytest
+```
+
+```bash
+# Git Bash
+export TEST_DATABASE_URL="postgresql+psycopg://sihs:sihs_password@localhost:5435/sihs_test"
+pytest
+```
+
+Sin la variable, pytest usa el valor por defecto de `tests/conftest.py`.
+
+### Comandos útiles
+
+| Quiero… | Comando |
+|---|---|
+| Ver el estado | `docker compose ps` |
+| Ver los logs del backend | `docker compose logs -f backend` |
+| Entrar a PostgreSQL | `docker compose exec db psql -U sihs -d sihs` |
+| Apagar sin perder datos | `docker compose down` |
+| Apagar y **borrar** los datos de desarrollo | `docker compose down -v` |
+
+### Problemas comunes con Docker
+
+| Síntoma | Solución |
+|---|---|
+| `port is already allocated` | Otro programa usa ese puerto: cambia el número de la izquierda en `ports` |
+| El backend no conecta con la BD | Dentro de Docker el host es `db`, no `localhost` |
+| El backend arranca antes que la BD | No debería pasar: el compose espera el `healthcheck` de `db`. Revisa `docker compose logs db` |
+
+> La contraseña `sihs_password` del compose es solo para desarrollo local. Para un servidor debe venir de variables de entorno (deuda técnica DT-12).
 
 ---
 
@@ -262,7 +406,7 @@ pytest --cov --cov-report=html         # reporte navegable en htmlcov/
 
 **Cobertura:** 87 % en total; 90 % en el servicio de horarios (módulo crítico) y 97 % en sus rutas.
 
-**Ambiente de pruebas separado:** se usa la base `sihs_test`, configurable con `TEST_DATABASE_URL`. Las tablas se crean al iniciar la sesión de pruebas y se eliminan al terminar.
+**Ambiente de pruebas separado:** se usa la base `sihs_test`, configurable con `TEST_DATABASE_URL`. Las tablas se crean al iniciar la sesión de pruebas y se eliminan al terminar. También puede ser el contenedor `db-test` (ver [Ejecutar con Docker](#ejecutar-con-docker)).
 
 ---
 
@@ -302,7 +446,9 @@ backend/
 ├── tests/
 │   ├── unit/
 │   └── integration/
+├── .dockerignore          lo que no se copia a la imagen (.env, .venv, tests…)
 ├── .env.example
+├── Dockerfile             imagen de la API (Python 3.12 slim)
 ├── pyproject.toml         configuración de pytest y cobertura
 ├── ruff.toml              configuración del linter
 ├── requirements.txt
