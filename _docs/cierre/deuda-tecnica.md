@@ -19,6 +19,7 @@
 | DT-08 | El usuario del registro público queda con rol `user` hasta que el admin lo cambie, sin aviso | Nuevos usuarios que no ven nada útil y un admin que no se entera | Baja | M | Listado de "pendientes de rol" en el dashboard del admin |
 | DT-09 | El correo se envía en segundo plano dentro del mismo proceso, sin reintentos | Si el SMTP falla, el enlace se pierde (queda solo en el log) | Baja | M | Cola de tareas con reintentos, o un proveedor de correo con API |
 | DT-11 | La migración `d8f3b61e9a42` no se puede revertir | Un `downgrade` no recupera cómo estaba escrito cada correo | Baja | — | Aceptada: la normalización es irreversible por naturaleza |
+| DT-12 | Usuario y contraseña de PostgreSQL escritos en `docker-compose.yml` | Válido solo para desarrollo local; en un servidor quedarían expuestos en el repositorio | Media | S | Leerlos de un `.env` en la raíz (`${POSTGRES_PASSWORD}`) que no se suba a Git, con un `.env.example` de referencia |
 
 ## Deuda pagada en T6
 

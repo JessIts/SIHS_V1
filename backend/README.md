@@ -2,7 +2,7 @@
 
 API REST del Sistema de Información de Horarios (SIHS). Gestiona la programación de clases de las fichas de formación por trimestre, día y franja. Impide choques de ficha, instructor y ambiente, y controla el acceso por rol y por coordinación.
 
-Es el **4.° backend del programa** y el primero construido en Python. La comparación con los anteriores está en `../_docs/cierre/reflexion-backends.md`.
+Es el backend que acompañó todo el programa: se desarrolló de forma continua, siempre con la misma arquitectura por capas. Su evolución está en `../_docs/cierre/reflexion-backend.md`.
 
 ---
 
@@ -12,11 +12,12 @@ Es el **4.° backend del programa** y el primero construido en Python. La compar
 2. [Tecnologías](#tecnologías)
 3. [Arquitectura](#arquitectura)
 4. [Instalación desde cero](#instalación-desde-cero)
-5. [Autenticación y roles](#autenticación-y-roles)
-6. [Documentación de la API](#documentación-de-la-api)
-7. [Pruebas](#pruebas)
-8. [Calidad de código](#calidad-de-código)
-9. [Estructura de carpetas](#estructura-de-carpetas)
+5. [Ejecutar con Docker](#ejecutar-con-docker)
+6. [Autenticación y roles](#autenticación-y-roles)
+7. [Documentación de la API](#documentación-de-la-api)
+8. [Pruebas](#pruebas)
+9. [Calidad de código](#calidad-de-código)
+10. [Estructura de carpetas](#estructura-de-carpetas)
 
 ---
 
@@ -198,6 +199,93 @@ Queda lista cuando la consola muestra `Uvicorn running on http://127.0.0.1:8000`
 
 ---
 
+## Ejecutar con Docker
+
+El proyecto trae un `docker-compose.yml` en la raíz con tres servicios. Requisito: **Docker Desktop** instalado y abierto.
+
+| Servicio | Contenedor | Puerto en tu PC | Para qué |
+|---|---|---|---|
+| `db` | `sihs-db` | 5434 | PostgreSQL de desarrollo (base `sihs`). Los datos persisten en el volumen `sihs_pgdata` |
+| `db-test` | `sihs-db-test` | 5435 | PostgreSQL de pruebas (base `sihs_test`). Guarda los datos en memoria y se borra al apagarlo |
+| `backend` | `sihs-backend` | 8000 | La API. Al arrancar aplica las migraciones (`alembic upgrade head`) |
+
+Se usan los puertos 5434 y 5435 para no chocar con un PostgreSQL instalado localmente (por ejemplo, en el 5432 o el 5433).
+
+### Opción A: todo en Docker
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose up --build -d                                        # construye y levanta todo
+docker compose ps                                                   # db debe aparecer "healthy"
+docker compose exec backend python -m scripts.seed_horarios        # datos de ejemplo
+docker compose exec backend python -m scripts.create_admin tu_correo@example.com
+```
+
+La API queda en `http://localhost:8000/docs`, y el frontend se ejecuta como siempre con `pnpm dev`.
+
+- El contenedor del backend toma `JWT_SECRET_KEY`, el SMTP y el resto de variables de `backend/.env`.
+- `DATABASE_URL` la define el compose: apunta a `db:5432`, que es el nombre del servicio dentro de la red de Docker.
+- No tiene `--reload`. Después de cambiar código, reconstrúyelo con `docker compose up --build -d backend`.
+
+### Opción B: base de datos en Docker y backend local (recomendada para desarrollar)
+
+```bash
+docker compose up -d db
+```
+
+En `backend/.env`:
+
+```
+DATABASE_URL=postgresql+psycopg://sihs:sihs_password@localhost:5434/sihs
+```
+
+Luego sigue los pasos 4 a 7 de la instalación (migraciones, seed, admin y `uvicorn --reload`). Así no necesitas PostgreSQL instalado y conservas la recarga automática.
+
+### Pruebas contra la base de Docker
+
+```bash
+docker compose up -d db-test
+```
+
+Define la variable en la terminal y ejecuta pytest:
+
+```powershell
+# PowerShell
+$env:TEST_DATABASE_URL = "postgresql+psycopg://sihs:sihs_password@localhost:5435/sihs_test"
+pytest
+```
+
+```bash
+# Git Bash
+export TEST_DATABASE_URL="postgresql+psycopg://sihs:sihs_password@localhost:5435/sihs_test"
+pytest
+```
+
+Sin la variable, pytest usa el valor por defecto de `tests/conftest.py`.
+
+### Comandos útiles
+
+| Quiero… | Comando |
+|---|---|
+| Ver el estado | `docker compose ps` |
+| Ver los logs del backend | `docker compose logs -f backend` |
+| Entrar a PostgreSQL | `docker compose exec db psql -U sihs -d sihs` |
+| Apagar sin perder datos | `docker compose down` |
+| Apagar y **borrar** los datos de desarrollo | `docker compose down -v` |
+
+### Problemas comunes con Docker
+
+| Síntoma | Solución |
+|---|---|
+| `port is already allocated` | Otro programa usa ese puerto: cambia el número de la izquierda en `ports` |
+| El backend no conecta con la BD | Dentro de Docker el host es `db`, no `localhost` |
+| El backend arranca antes que la BD | No debería pasar: el compose espera el `healthcheck` de `db`. Revisa `docker compose logs db` |
+
+> La contraseña `sihs_password` del compose es solo para desarrollo local. Para un servidor debe venir de variables de entorno (deuda técnica DT-12).
+
+---
+
 ## Autenticación y roles
 
 **Sesión:**
@@ -318,7 +406,7 @@ pytest --cov --cov-report=html         # reporte navegable en htmlcov/
 
 **Cobertura:** 87 % en total; 90 % en el servicio de horarios (módulo crítico) y 97 % en sus rutas.
 
-**Ambiente de pruebas separado:** se usa la base `sihs_test`, configurable con `TEST_DATABASE_URL`. Las tablas se crean al iniciar la sesión de pruebas y se eliminan al terminar.
+**Ambiente de pruebas separado:** se usa la base `sihs_test`, configurable con `TEST_DATABASE_URL`. Las tablas se crean al iniciar la sesión de pruebas y se eliminan al terminar. También puede ser el contenedor `db-test` (ver [Ejecutar con Docker](#ejecutar-con-docker)).
 
 ---
 
@@ -358,7 +446,9 @@ backend/
 ├── tests/
 │   ├── unit/
 │   └── integration/
+├── .dockerignore          lo que no se copia a la imagen (.env, .venv, tests…)
 ├── .env.example
+├── Dockerfile             imagen de la API (Python 3.12 slim)
 ├── pyproject.toml         configuración de pytest y cobertura
 ├── ruff.toml              configuración del linter
 ├── requirements.txt

@@ -35,7 +35,7 @@ El proyecto lo desarrolla una sola persona, así que cada retrospectiva es indiv
 
 ### Reflexión sobre las pruebas
 - Las 9 pruebas de integración de horarios se escribieron junto con el módulo, recorriendo el flujo completo: catálogos → casillas → choques → grilla. Eso dio confianza en el módulo crítico.
-- **Error de proceso:** después de cambiar la sesión a cookie httponly (commit `7f4b4cf`), la suite completa no se volvió a ejecutar. Las pruebas de autenticación y usuarios quedaron desactualizadas sin que nadie lo notara (DEF-01).
+- **Error de proceso:** después de cambiar la sesión a cookie httponly, la suite completa no se volvió a ejecutar. Las pruebas de autenticación y usuarios quedaron desactualizadas sin que nadie lo notara (DEF-01).
 - **Aprendizaje:** una prueba que no se ejecuta no protege nada. Y que una prueba pase no significa que valide lo que dice: 4 pasaban por la razón equivocada.
 
 ### Acciones para el Sprint 2

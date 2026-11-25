@@ -22,6 +22,7 @@ Organizar los horarios de las fichas de formación sin choques, y que cada perso
 | **Autenticación** | JWT en cookie `httponly` · contraseñas con Argon2 |
 | **Frontend** | React 19 · TypeScript · Vite · React Router 7 · CSS por componente |
 | **Pruebas y calidad** | pytest · pytest-cov · Postman · Playwright · ruff · ESLint |
+| **Contenedores** | Docker · Docker Compose (PostgreSQL de desarrollo y de pruebas, y la API) |
 
 Instalación y detalle de cada parte:
 - [`backend/README.md`](backend/README.md): API, instalación, variables de entorno y endpoints.
@@ -34,11 +35,12 @@ SISTEMA SIHS/
 ├── backend/       API REST por capas (routes → controllers → services → repositories)
 ├── frontend/      Aplicación web en React con un panel por rol
 ├── db_horarios/   Prototipo SQL del modelo y de la carga masiva por CSV
+├── docker-compose.yml  PostgreSQL (desarrollo y pruebas) y la API en contenedores
 └── _docs/
     ├── estado-del-proyecto.md  Porcentaje de avance por módulo
     ├── arquitectura/           Diagramas del sistema, capas, modelo de datos y flujos
     ├── pruebas/                Plan, matriz de casos, defectos, reporte, evidencias y Postman
-    └── cierre/                 Visión de cierre, retrospectivas y deuda técnica
+    └── cierre/                 Visión de cierre, retrospectivas, deuda técnica y reflexión del backend
 ```
 
 ## Estado del proyecto
@@ -69,6 +71,18 @@ Las funcionalidades principales están construidas y probadas. Lo que queda es p
 En las pruebas se detectaron 5 defectos, y todos se corrigieron y verificaron. El detalle está en [`_docs/pruebas/`](_docs/pruebas/).
 
 ## Inicio rápido
+
+**Con Docker** (requiere Docker Desktop):
+
+```bash
+docker compose up --build -d                                   # API en http://localhost:8000/docs
+docker compose exec backend python -m scripts.seed_horarios   # datos de ejemplo
+cd frontend && pnpm install && pnpm dev                        # http://localhost:5173
+```
+
+Necesita un `backend/.env` (cópialo de `.env.example` y define `JWT_SECRET_KEY`). Los detalles están en [`backend/README.md`](backend/README.md#ejecutar-con-docker).
+
+**Sin Docker** (requiere PostgreSQL instalado):
 
 ```bash
 # Backend: http://localhost:8000/docs
