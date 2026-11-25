@@ -20,6 +20,11 @@ type Estado =
   | { tipo: 'formulario'; email: string }
   | { tipo: 'listo'; mensaje: string }
 
+const ENLACE_INCOMPLETO: Estado = {
+  tipo: 'invalido',
+  mensaje: 'El enlace está incompleto. Ábrelo de nuevo desde el correo.',
+}
+
 /**
  * Paso 2 de la recuperación: se abre desde el enlace del correo
  * (/reset-password?token=...) y permite definir la nueva contraseña.
@@ -39,16 +44,13 @@ function ResetPassword() {
   const [error, setError] = useState('')
 
   // Antes de mostrar el formulario se verifica que el enlace siga vigente
+  // (sin token no hay nada que validar: ese caso se resuelve en el render)
   useEffect(() => {
-    let active = true
-
     if (!token) {
-      setEstado({
-        tipo: 'invalido',
-        mensaje: 'El enlace está incompleto. Ábrelo de nuevo desde el correo.',
-      })
       return
     }
+
+    let active = true
 
     validateResetToken(token)
       .then((status) => {
@@ -72,6 +74,10 @@ function ResetPassword() {
       active = false
     }
   }, [token])
+
+  // Sin token el enlace es inválido; se calcula aquí en vez de guardarlo
+  // en el estado desde el efecto (evita un render extra)
+  const estadoActual: Estado = token ? estado : ENLACE_INCOMPLETO
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>,
@@ -115,23 +121,23 @@ function ResetPassword() {
       <div className="reset-password-page__header">
         <h2>Nueva contraseña</h2>
 
-        {estado.tipo === 'formulario' && (
+        {estadoActual.tipo === 'formulario' && (
           <p>
             Crea una contraseña nueva para la cuenta{' '}
-            <strong>{estado.email}</strong>.
+            <strong>{estadoActual.email}</strong>.
           </p>
         )}
       </div>
 
-      {estado.tipo === 'validando' && (
+      {estadoActual.tipo === 'validando' && (
         <p className="reset-password-page__muted">
           Verificando el enlace...
         </p>
       )}
 
-      {estado.tipo === 'invalido' && (
+      {estadoActual.tipo === 'invalido' && (
         <div className="reset-password-page__notice reset-password-page__notice--error" role="alert">
-          <p>{estado.mensaje}</p>
+          <p>{estadoActual.mensaje}</p>
 
           <Link to="/forgot-password" className="reset-password-page__link">
             Solicitar un enlace nuevo
@@ -139,7 +145,7 @@ function ResetPassword() {
         </div>
       )}
 
-      {estado.tipo === 'formulario' && (
+      {estadoActual.tipo === 'formulario' && (
         <form
           className="reset-password-page__form"
           onSubmit={handleSubmit}
@@ -182,9 +188,9 @@ function ResetPassword() {
         </form>
       )}
 
-      {estado.tipo === 'listo' && (
+      {estadoActual.tipo === 'listo' && (
         <div className="reset-password-page__notice reset-password-page__notice--success" role="status">
-          <p>{estado.mensaje}</p>
+          <p>{estadoActual.mensaje}</p>
 
           <Button type="button" onClick={() => navigate('/login')}>
             Ir a iniciar sesión
@@ -192,7 +198,7 @@ function ResetPassword() {
         </div>
       )}
 
-      {estado.tipo !== 'listo' && (
+      {estadoActual.tipo !== 'listo' && (
         <Link to="/login" className="reset-password-page__back">
           Volver a iniciar sesión
         </Link>
