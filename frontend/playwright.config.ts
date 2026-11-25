@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './E2E',
   timeout: 30_000,
   reporter: 'html',
 
@@ -24,4 +24,4 @@ export default defineConfig({
     url: 'http://localhost:5173',
     reuseExistingServer: true,
   },
-})
+})
