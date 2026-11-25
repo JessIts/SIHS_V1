@@ -7,7 +7,7 @@
 | Alcance | Avance |
 |---|---|
 | **Funcionalidades principales** (lo que el sistema hace hoy) | **≈ 93 %** |
-| **Sistema completo** (incluye lo que pasa a T7) | **≈ 77 %** |
+| **Sistema completo** (incluye lo que pasa a T7) | **≈ 78 %** |
 
 Las funcionalidades principales están construidas, conectadas de punta a punta (base de datos → API → interfaz) y probadas. El trabajo que falta en ellas es de **pulido**: experiencia de uso, mensajes, casos borde y algunas pruebas. La diferencia con el sistema completo se debe sobre todo a la **carga masiva de horarios**, que es el fuerte previsto del sistema y hoy existe solo como prototipo SQL.
 
@@ -43,9 +43,9 @@ Es una **estimación del desarrollador**, apoyada en las evidencias de `_docs/pr
 |---|---|---|---|
 | Carga masiva de horarios (CSV/Excel) | 10 % | 20 % | Prototipo SQL en `db_horarios/03_carga_masiva.sql`. Falta el endpoint, la pantalla y el reporte de errores por fila (DT-02) |
 | Exportar horarios a PDF | 5 % | 0 % | No iniciado |
-| Despliegue e integración continua | 5 % | 10 % | Solo ambiente local. Falta parametrizar cookie, CORS y URL de la API (DT-03), y configurar GitHub Actions (DT-01) |
+| Despliegue e integración continua | 5 % | 30 % | Contenedores listos: `docker-compose.yml` con PostgreSQL de desarrollo y de pruebas, y el `Dockerfile` de la API. Falta parametrizar cookie, CORS y URL de la API (DT-03), sacar los secretos del compose (DT-12) y configurar GitHub Actions (DT-01) |
 
-**Total del sistema:** 74,75 + 2,5 = 77,25 de 100 puntos, es decir **≈ 77 %**.
+**Total del sistema:** 74,75 + 3,5 = 78,25 de 100 puntos, es decir **≈ 78 %**.
 
 ## Calidad alcanzada
 

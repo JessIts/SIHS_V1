@@ -16,7 +16,7 @@ El fuerte previsto del sistema es la **gestión de datos y las cargas masivas**.
 | Área | Entregado | Evidencia |
 |---|---|---|
 | Modelo de datos | 18 tablas con reglas de integridad en la BD: anti-choque, modalidad/ambiente, trigger de validación y ambiente por coordinación | `backend/alembic/versions/`, `_docs/arquitectura/` |
-| Backend (4.° backend del programa) | API REST FastAPI por capas: 14 recursos académicos con CRUD, gestión de usuarios, autenticación con cookie httponly, 5 roles, alcance por coordinación y recuperación de contraseña | `backend/`, Swagger en `/docs` |
+| Backend | API REST FastAPI por capas: 14 recursos académicos con CRUD, gestión de usuarios, autenticación con cookie httponly, 5 roles, alcance por coordinación y recuperación de contraseña | `backend/`, Swagger en `/docs` |
 | Frontend | SPA React: dashboard por rol, CRUD de gestión, grilla de horarios, vistas personales y recuperación de contraseña | `frontend/` |
 | Pruebas | 129 automatizadas (unitarias e integración), colección de Postman con 48 tests y 2 E2E con Playwright. Cobertura del 87 % (90 % en el módulo crítico) | `_docs/pruebas/` |
 | Calidad | ruff sin errores, 4 defectos registrados y corregidos con su ciclo completo | `_docs/pruebas/defectos.md` |
