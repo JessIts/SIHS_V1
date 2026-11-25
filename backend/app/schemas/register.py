@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+
+from app.schemas.types import NormalizedEmail
 
 
 class RegisterRequest(BaseModel):
@@ -8,7 +10,7 @@ class RegisterRequest(BaseModel):
         max_length=100,
     )
 
-    email: EmailStr
+    email: NormalizedEmail
 
     phone: str = Field(
         min_length=7,
