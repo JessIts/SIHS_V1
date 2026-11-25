@@ -32,3 +32,5 @@
 | Sin medición de cobertura | pytest-cov configurado en `pyproject.toml` |
 | `requirements.txt` en UTF-16 (generado con `pip freeze >` en PowerShell) | Convertido a UTF-8, más `requirements-dev.txt` |
 | `JWT_SECRET_KEY` sin guía de longitud en `.env.example` | Comentario con el mínimo de 32 caracteres y el comando para generar una clave |
+| 3 errores de ESLint en el frontend (Fast Refresh en `AuthContext.tsx` y `setState` dentro de efectos en `Horarios.tsx` y `ResetPassword.tsx`) | Corregidos: contexto y hook en archivos separados, y estados de carga calculados en el render. `pnpm lint` queda en 0 errores |
+| Prueba E2E de fichas desactualizada tras el cambio de roles (DEF-05) | Sesión de admin y verificación por API, que no depende de la paginación de la tabla |

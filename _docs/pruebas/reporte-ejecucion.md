@@ -24,6 +24,7 @@
 | Cobertura total del backend | No se medía | **87 %** (líneas y ramas) |
 | Cobertura del módulo crítico (horarios) | No se medía | **90 %** el servicio, **97 %** las rutas |
 | Linter (ruff) | No configurado | **0 errores** |
+| Linter del frontend (ESLint) | 3 errores | **0 errores** |
 | Defectos abiertos | 4 | 0 de severidad Alta o Media |
 
 Evidencias: `evidencias/01_ejecucion1_suite_antes.txt` y `evidencias/06_ejecucion2_suite_despues.txt`.
@@ -34,8 +35,8 @@ Evidencias: `evidencias/01_ejecucion1_suite_antes.txt` y `evidencias/06_ejecucio
 |---|---|---|
 | Unitarias (`tests/unit`) | 54 | 54 pasaron |
 | Integración (`tests/integration`) | 75 | 75 pasaron |
-| API: colección de Postman | 29 peticiones / 48 tests | 29 de 29 respuestas esperadas en el runner de verificación*. Pendiente: ejecutar en Postman y adjuntar la captura del Runner |
-| E2E (Playwright) | 2 | Pendiente de ejecutar en el equipo local (`pnpm test:e2e`) |
+| API: colección de Postman | 29 peticiones / 48 tests | 29 de 29 respuestas esperadas en el runner de verificación*. En Postman: 44 de 44 tests (sección 7) |
+| E2E (Playwright) | 2 | 2 de 2 en el equipo local, después de corregir DEF-05 (sección 7) |
 
 \* La colección se validó con un script que envía las mismas peticiones, en el mismo orden, contra una base cargada con el seed, y compara el código de respuesta y los datos clave. La ejecución en la aplicación de Postman se registra en la sección 7.
 
@@ -66,7 +67,8 @@ Detalle completo en `defectos.md`.
 | DEF-01 Suite de auth/usuarios desactualizada | Alta | Ejecución 1: 41 de 122 sin pasar | Ejecución 2: 129/129 |
 | DEF-02 Correo distingue mayúsculas | Alta | 4 de 4 pruebas fallaban | 4 de 4 pasan |
 | DEF-03 Prueba intermitente de horarios | Media | 4 de 10 ejecuciones con errores | 10 de 10 limpias |
-| DEF-04 Ruta de las pruebas E2E | Baja | Revisión de la configuración | Pendiente de verificar con `pnpm test:e2e` |
+| DEF-04 Ruta de las pruebas E2E | Baja | Revisión de la configuración | `pnpm test:e2e` encuentra `E2E/` y ejecuta las 2 pruebas (`12_e2e_despues.png`) |
+| DEF-05 Prueba E2E de fichas con el rol coordinador | Media | Ejecución local: 0 de 2 (`11_e2e_antes.png`) | 2 de 2 (`12_e2e_despues.png`) |
 
 ## 6. Análisis
 
@@ -83,13 +85,21 @@ Desde la corrección, cada prueba de sesión verifica la cookie httponly real.
 - Ninguna prueba se ejecutaba de forma rutinaria después de cada cambio, y por eso DEF-01 pasó inadvertido desde el cambio a cookie (commit `7f4b4cf`) hasta esta ejecución.
 - Acción: ejecutar `pytest` y `ruff check .` antes de cada merge a `development`. Queda como deuda técnica automatizarlo con GitHub Actions.
 
-## 7. Ejecuciones locales pendientes
-
-Completar en el equipo del desarrollador y adjuntar las capturas en `evidencias/`.
+## 7. Ejecuciones locales (equipo del desarrollador, Windows)
 
 | Prueba | Comando | Resultado | Fecha |
 |---|---|---|---|
-| Colección de Postman (Runner) | Collection Runner → "SIHS API - Pruebas" | | |
-| E2E Playwright | `pnpm test:e2e` | | |
-| ESLint del frontend | `pnpm lint` | | |
-| Suite del backend en Windows | `pytest --cov` | | |
+| Colección de Postman (Runner) | Collection Runner → "SIHS API - Pruebas" | 44 de 44 tests, 0 errores (`10_postman_runner.png`). La carpeta 7 (admin, 4 tests) se omitió porque la cuenta de admin aún no existía | 2026-11-25 |
+| E2E Playwright | `pnpm test:e2e` | Ejec. 1: 0 de 2, se detectó DEF-05 (`11_e2e_antes.png`). Ejec. 2: 2 de 2 (`12_e2e_despues.png`) | 2026-11-25 |
+| ESLint del frontend | `pnpm lint` | Ejec. 1: 3 errores (`13_eslint.txt`). Corregidos en el commit `fix(lint)`. Ejec. 2: 0 errores (`14_eslint_despues.txt`) | 2026-11-25 |
+| Suite del backend en Windows | `pytest --cov` | 129 passed, cobertura total 87 % (`09_pytest_windows.txt`) | 2026-11-25 |
+
+**Hallazgos de análisis estático (ESLint):**
+
+| Regla | Archivo | Problema | Corrección |
+|---|---|---|---|
+| `react-refresh/only-export-components` | `src/context/AuthContext.tsx` | El archivo exportaba el componente `AuthProvider` y el hook `useAuthContext`; con esa mezcla, Vite recarga toda la página en vez de conservar el estado | El contexto pasó a `context/auth.context.ts` y el hook a `hooks/useAuth.ts`. `AuthContext.tsx` exporta solo el componente |
+| `react-hooks/set-state-in-effect` | `src/pages/Horarios/Horarios.tsx` | El efecto activaba `loading` y limpiaba el error de forma síncrona, lo que provoca un render extra en cascada | El efecto solo cambia el estado cuando llega la respuesta. "Cargando" se calcula en el render, y después de guardar se usa `recargarGrilla()` desde el evento |
+| `react-hooks/set-state-in-effect` | `src/pages/ResetPassword/ResetPassword.tsx` | Sin token, el efecto asignaba el estado "enlace incompleto" | Ese estado se calcula en el render (`estadoActual`); el efecto solo corre cuando hay token que validar |
+
+Estos hallazgos no se registraron como defectos (issues) porque no los ve el usuario final: son problemas de calidad del código detectados por el linter, y se corrigieron en el mismo ciclo detectar → corregir → verificar.
