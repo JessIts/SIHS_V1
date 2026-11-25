@@ -15,7 +15,6 @@ from app.schemas.dia_semana import (
 )
 from app.services.dia_semana_service import DiaSemanaService
 
-
 router = APIRouter(
     prefix="/dias-semana",
     tags=["Días de la semana"],

@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.common.responses import ApiResponse
 from app.controllers.auth_controller import AuthController
 from app.core.database import get_db
-from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.auth import LoginRequest
 from app.services.auth_service import AuthService
-from fastapi import APIRouter, Depends, Response
 
 router = APIRouter(
     prefix="/auth",
@@ -48,7 +46,7 @@ def login(
             "authenticated": True,
         },
     }
-    
+
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie(

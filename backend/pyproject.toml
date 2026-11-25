@@ -1,0 +1,19 @@
+# Configuración de pruebas y cobertura del backend.
+# El linter (ruff) se configura en ruff.toml.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 0

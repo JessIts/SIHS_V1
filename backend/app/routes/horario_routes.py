@@ -17,7 +17,6 @@ from app.schemas.horario import (
 )
 from app.services.horario_service import HorarioService
 
-
 router = APIRouter(
     prefix="/horarios",
     tags=["Horarios"],

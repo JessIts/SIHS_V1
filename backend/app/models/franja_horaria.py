@@ -1,9 +1,14 @@
 from datetime import time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, ForeignKey, SmallInteger, Time, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.jornada import Jornada
+
 
 
 class FranjaHoraria(BaseModel):

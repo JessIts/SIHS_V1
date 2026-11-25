@@ -29,7 +29,7 @@ from app.repositories.franja_horaria_repository import FranjaHorariaRepository
 from app.repositories.horario_repository import HorarioRepository
 from app.repositories.resultado_aprendizaje_repository import ResultadoAprendizajeRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.horario import HorarioCreate, HorarioUpdate
+from app.schemas.horario import HorarioCreate
 from app.services.base_service import BaseService
 
 

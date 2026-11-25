@@ -15,7 +15,6 @@ from app.schemas.coordinacion import (
 )
 from app.services.coordinacion_service import CoordinacionService
 
-
 router = APIRouter(
     prefix="/coordinaciones",
     tags=["Coordinaciones"],

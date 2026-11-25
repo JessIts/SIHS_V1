@@ -8,7 +8,6 @@ from app.schemas.register import RegisterRequest
 from app.schemas.user import UserResponse
 from app.services.register_service import RegisterService
 
-
 router = APIRouter(
     prefix="/auth",
     tags=["Registration"],

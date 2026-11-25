@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.coordinacion import Coordinacion
+    from app.models.sede import Sede
+
 
 
 class Ambiente(BaseModel):

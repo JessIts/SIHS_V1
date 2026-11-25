@@ -2,9 +2,6 @@ from app.core.database import SessionLocal
 from app.services.user_service import UserService
 
 
-from app.core.database import SessionLocal
-from app.services.user_service import UserService
-
 def create_admin(
     email: str,
     db,

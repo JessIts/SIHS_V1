@@ -11,7 +11,6 @@ from app.schemas.password_reset import (
 )
 from app.services.password_reset_service import PasswordResetService
 
-
 router = APIRouter(
     prefix="/auth/password",
     tags=["Password recovery"],

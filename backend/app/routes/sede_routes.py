@@ -15,7 +15,6 @@ from app.schemas.sede import (
 )
 from app.services.sede_service import SedeService
 
-
 router = APIRouter(
     prefix="/sedes",
     tags=["Sedes"],

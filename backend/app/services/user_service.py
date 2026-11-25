@@ -1,3 +1,4 @@
+from math import ceil
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -8,15 +9,14 @@ from app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
+from app.core.security import hash_password
 from app.models.coordinacion import Coordinacion
+from app.models.roles import UserRole
 from app.models.user import User
 from app.repositories.coordinacion_repository import CoordinacionRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate, UserUpdate, UserProfileUpdate, UserRoleUpdate
-from app.core.security import hash_password
-from app.models.roles import UserRole
+from app.schemas.user import UserCreate, UserProfileUpdate, UserRoleUpdate, UserUpdate
 
-from math import ceil
 
 class UserService:
 
@@ -66,12 +66,12 @@ class UserService:
 
             return user
 
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
 
             raise ConflictException(
                 "No fue posible crear el usuario."
-            )
+            ) from error
 
     def get_user(
         self,
@@ -104,9 +104,9 @@ class UserService:
             self.db.commit()
             self.db.refresh(user)
             return user
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
-            raise ConflictException("No fue posible promover el usuario a administrador.")
+            raise ConflictException("No fue posible promover el usuario a administrador.") from error
 
 
     def get_users(
@@ -181,9 +181,9 @@ class UserService:
                 )
 
         # Actualizar contraseña de forma segura
-        
+
         new_password = update_data.pop("password", None)
-        
+
         if new_password is not None:
 
             user.password_hash = hash_password(new_password)
@@ -196,11 +196,11 @@ class UserService:
             self.db.commit()
             self.db.refresh(user)
             return user
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
             raise ConflictException(
                 "No fue posible actualizar el usuario."
-            )
+            ) from error
 
     def delete_user(
         self,
@@ -214,12 +214,12 @@ class UserService:
 
             self.db.commit()
 
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
 
             raise ConflictException(
                 "No fue posible desactivar el usuario."
-            )
+            ) from error
 
     def activate_user(
         self,
@@ -249,13 +249,13 @@ class UserService:
 
             return user
 
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
 
             raise ConflictException(
                 "No fue posible activar el usuario."
-            )
-            
+            ) from error
+
     def update_my_profile(
         self,
         user: User,
@@ -308,12 +308,12 @@ class UserService:
 
             return user
 
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
 
             raise ConflictException(
                 "No fue posible actualizar el perfil."
-            )
+            ) from error
 
     def _coordinacion(self, coordinacion_uuid: UUID) -> Coordinacion:
         coordinacion = CoordinacionRepository(self.db).get_by_uuid(
@@ -358,9 +358,9 @@ class UserService:
 
             return user
 
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
 
             raise ConflictException(
                 "No fue posible cambiar el rol del usuario."
-            )
+            ) from error

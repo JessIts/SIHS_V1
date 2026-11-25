@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.models.base import BaseModel
 
-
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 

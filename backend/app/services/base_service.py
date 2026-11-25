@@ -6,15 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.pagination import build_page
-from app.core.scope import UNRESTRICTED, AccessScope
 from app.core.exceptions import (
     ConflictException,
     NotFoundException,
     ValidationException,
 )
+from app.core.scope import UNRESTRICTED, AccessScope
 from app.models.base import BaseModel
 from app.repositories.base_repository import BaseRepository
-
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -286,7 +285,7 @@ class BaseService(Generic[ModelT]):
 
             raise ConflictException(
                 self._integrity_message(error, default_message)
-            )
+            ) from error
 
     def _integrity_message(
         self,

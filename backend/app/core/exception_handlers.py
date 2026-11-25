@@ -4,10 +4,10 @@ from fastapi.responses import JSONResponse
 from app.core.exceptions import (
     AppException,
     ConflictException,
+    ForbiddenException,
     NotFoundException,
-    ValidationException,
     UnauthorizedException,
-    ForbiddenException
+    ValidationException,
 )
 
 
@@ -61,7 +61,7 @@ async def validation_exception_handler(
             "message": exc.message,
         },
     )
-    
+
 async def unauthorized_exception_handler(
     request: Request,
     exc: UnauthorizedException,

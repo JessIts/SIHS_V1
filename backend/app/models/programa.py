@@ -1,7 +1,15 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.competencia import Competencia
+    from app.models.coordinacion import Coordinacion
+    from app.models.ficha import Ficha
+
 
 
 class Programa(BaseModel):
