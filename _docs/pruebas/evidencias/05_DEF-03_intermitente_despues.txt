@@ -1,0 +1,11 @@
+Versión corregida: 10 ejecuciones de la suite completa
+Ejecución 1: 129 passed, 345 warnings in 7.32s
+Ejecución 2: 129 passed, 345 warnings in 7.02s
+Ejecución 3: 129 passed, 345 warnings in 7.68s
+Ejecución 4: 129 passed, 345 warnings in 7.62s
+Ejecución 5: 129 passed, 345 warnings in 8.03s
+Ejecución 6: 129 passed, 345 warnings in 8.60s
+Ejecución 7: 129 passed, 345 warnings in 7.41s
+Ejecución 8: 129 passed, 345 warnings in 7.40s
+Ejecución 9: 129 passed, 345 warnings in 7.07s
+Ejecución 10: 129 passed, 345 warnings in 7.07s

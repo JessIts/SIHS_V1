@@ -1,0 +1,458 @@
+F..FFF.FFFF...........E.......FFFFFFEE.EEEEE.EEEEEEEEEEEE.E.........E.FF [ 59%]
+FFF...............................................                       [100%]
+==================================== ERRORS ====================================
+_______ ERROR at setup of test_admin_asigna_coordinacion_al_coordinador ________
+
+admin_client = <starlette.testclient.TestClient object at 0x7ff12f9d3bd0>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f9ad5e0>
+
+>       trimestre = _post(c, "/trimestres", {
+
+tests/integration/routes/test_horarios_routes.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x7ff12f9d3bd0>
+url = '/trimestres'
+body = {'anio': 2014, 'numero': 3, 'fecha_inicio': '2026-07-09', 'fecha_fin': '2026-09-28'}
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'Ya existe ese trimestre para el año indicado.'}
+E       assert 409 == 201
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests/integration/routes/test_horarios_routes.py:57: AssertionError
+________________ ERROR at setup of test_user_can_get_my_profile ________________
+
+client = <starlette.testclient.TestClient object at 0x7ff134e49ae0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_______________ ERROR at setup of test_admin_can_get_my_profile ________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c050>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f38d310>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:121: AssertionError
+________________ ERROR at setup of test_user_cannot_list_users _________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c160>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_________________ ERROR at setup of test_admin_can_list_users __________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c380>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f38f5c0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:121: AssertionError
+________________ ERROR at setup of test_get_user_without_token _________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c6b0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_____________ ERROR at setup of test_user_cannot_get_user_by_uuid ______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c8d0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+______________ ERROR at setup of test_admin_can_get_user_by_uuid _______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32d6a0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+____________ ERROR at setup of test_user_cannot_get_inactive_users _____________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32e030>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_____________ ERROR at setup of test_admin_can_get_inactive_users ______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32e470>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f3ebb60>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:121: AssertionError
+______________ ERROR at setup of test_activate_user_without_token ______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32e360>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_______________ ERROR at setup of test_user_cannot_activate_user _______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32ee00>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+________________ ERROR at setup of test_admin_can_activate_user ________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32f460>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_______________ ERROR at setup of test_update_user_without_token _______________
+
+client = <starlette.testclient.TestClient object at 0x7ff134e49f20>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+________________ ERROR at setup of test_user_cannot_update_user ________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32f680>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_________________ ERROR at setup of test_admin_can_update_user _________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f9d3570>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_______________ ERROR at setup of test_delete_user_without_token _______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12ff61bf0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+________________ ERROR at setup of test_user_cannot_delete_user ________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12ff60e20>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+_________________ ERROR at setup of test_admin_can_delete_user _________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32f790>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+________ ERROR at setup of test_admin_role_cannot_be_changed_by_update _________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32c7c0>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f6a09b0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:121: AssertionError
+___ ERROR at setup of test_inactive_admin_cannot_access_with_existing_token ____
+
+client = <starlette.testclient.TestClient object at 0x7ff12f32fdf0>
+db = <sqlalchemy.orm.session.Session object at 0x7ff134bb0410>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:121: AssertionError
+______ ERROR at setup of test_get_my_profile_with_token_from_another_user ______
+
+client = <starlette.testclient.TestClient object at 0x7ff12ff929c0>
+
+>       assert response.status_code == 201, response.json()
+E       AssertionError: {'success': False, 'message': 'No autenticado.'}
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/conftest.py:86: AssertionError
+=================================== FAILURES ===================================
+______________________________ test_login_success ______________________________
+
+client = <starlette.testclient.TestClient object at 0x7ff136df6270>
+db = <sqlalchemy.orm.session.Session object at 0x7ff136f7e510>
+
+>       assert response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:19: AssertionError
+___________________________ test_login_inactive_user ___________________________
+
+client = <starlette.testclient.TestClient object at 0x7ff136de6c40>
+db = <sqlalchemy.orm.session.Session object at 0x7ff13709e8b0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:91: AssertionError
+_________________ test_login_token_contains_correct_user_uuid __________________
+
+client = <starlette.testclient.TestClient object at 0x7ff135b20180>
+db = <sqlalchemy.orm.session.Session object at 0x7ff135b208a0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:131: AssertionError
+____________________ test_login_token_can_access_my_profile ____________________
+
+client = <starlette.testclient.TestClient object at 0x7ff1382f0ef0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:167: AssertionError
+____________ test_login_inactive_user_does_not_return_access_token _____________
+
+client = <starlette.testclient.TestClient object at 0x7ff136d6fac0>
+db = <sqlalchemy.orm.session.Session object at 0x7ff136d6f9b0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:243: AssertionError
+__________________ test_login_token_contains_required_claims ___________________
+
+client = <starlette.testclient.TestClient object at 0x7ff136d6ff00>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:285: AssertionError
+__________________ test_login_token_has_configured_algorithm ___________________
+
+client = <starlette.testclient.TestClient object at 0x7ff136cb3bd0>
+
+>       assert response.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:333: AssertionError
+_____________ test_login_token_expiration_is_configured_correctly ______________
+
+client = <starlette.testclient.TestClient object at 0x7ff136cb3ac0>
+
+>       assert response.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_auth_routes.py:363: AssertionError
+___________________________ test_create_user_success ___________________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6afce0>
+
+>       assert response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_user_routes.py:22: AssertionError
+_______________________ test_get_user_with_invalid_token _______________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6aff00>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_user_routes.py:43: AssertionError
+_____________________ test_get_my_profile_with_valid_token _____________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6af240>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_user_routes.py:68: AssertionError
+______________ test_get_inactive_users_forbidden_for_regular_user ______________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6afac0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_user_routes.py:110: AssertionError
+__________________ test_get_inactive_users_allowed_for_admin ___________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6af680>
+db = <sqlalchemy.orm.session.Session object at 0x7ff12f4859a0>
+
+>       assert create_response.status_code == 201
+E       assert 401 == 201
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/integration/routes/test_user_routes.py:150: AssertionError
+______________________ test_get_my_profile_without_token _______________________
+
+client = <starlette.testclient.TestClient object at 0x7ff12f6af350>
+
+>       assert "detail" in data
+E       AssertionError: assert 'detail' in {'success': False, 'message': 'No autenticado.'}
+
+tests/integration/routes/test_user_routes.py:191: AssertionError
+________________________ test_get_current_user_success _________________________
+
+>           result = get_current_user(
+E           TypeError: get_current_user() got an unexpected keyword argument 'credentials'
+
+tests/unit/core/test_dependencies.py:46: TypeError
+_____________________ test_get_current_user_invalid_token ______________________
+
+>           get_current_user(
+E           TypeError: get_current_user() got an unexpected keyword argument 'credentials'
+
+tests/unit/core/test_dependencies.py:67: TypeError
+____________________ test_get_current_user_invalid_subject _____________________
+
+>               get_current_user(
+E               TypeError: get_current_user() got an unexpected keyword argument 'credentials'
+
+tests/unit/core/test_dependencies.py:90: TypeError
+_____________________ test_get_current_user_user_not_found _____________________
+
+>               get_current_user(
+E               TypeError: get_current_user() got an unexpected keyword argument 'credentials'
+
+tests/unit/core/test_dependencies.py:115: TypeError
+____________________ test_get_current_user_missing_subject _____________________
+
+>               get_current_user(
+E               TypeError: get_current_user() got an unexpected keyword argument 'credentials'
+
+tests/unit/core/test_dependencies.py:135: TypeError
+=============================== warnings summary ===============================
+tests/integration/routes/test_horarios_routes.py: 18 warnings
+tests/integration/routes/test_password_reset_routes.py: 1 warning
+tests/integration/routes/test_user_routes.py: 3 warnings
+tests/unit/core/test_dependencies.py: 2 warnings
+tests/unit/core/test_security.py: 3 warnings
+tests/unit/services/test_auth_service.py: 1 warning
+
+tests/integration/routes/test_horarios_routes.py: 248 warnings
+tests/unit/core/test_security.py: 2 warnings
+
+tests/integration/routes/test_user_routes.py::test_get_my_profile_with_invalid_signature
+
+tests/integration/routes/test_user_routes.py::test_get_my_profile_with_wrong_jwt_algorithm
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/routes/test_auth_routes.py::test_login_success - ass...
+FAILED tests/integration/routes/test_auth_routes.py::test_login_inactive_user
+FAILED tests/integration/routes/test_auth_routes.py::test_login_token_contains_correct_user_uuid
+FAILED tests/integration/routes/test_auth_routes.py::test_login_token_can_access_my_profile
+FAILED tests/integration/routes/test_auth_routes.py::test_login_inactive_user_does_not_return_access_token
+FAILED tests/integration/routes/test_auth_routes.py::test_login_token_contains_required_claims
+FAILED tests/integration/routes/test_auth_routes.py::test_login_token_has_configured_algorithm
+FAILED tests/integration/routes/test_auth_routes.py::test_login_token_expiration_is_configured_correctly
+FAILED tests/integration/routes/test_user_routes.py::test_create_user_success
+FAILED tests/integration/routes/test_user_routes.py::test_get_user_with_invalid_token
+FAILED tests/integration/routes/test_user_routes.py::test_get_my_profile_with_valid_token
+FAILED tests/integration/routes/test_user_routes.py::test_get_inactive_users_forbidden_for_regular_user
+FAILED tests/integration/routes/test_user_routes.py::test_get_inactive_users_allowed_for_admin
+FAILED tests/integration/routes/test_user_routes.py::test_get_my_profile_without_token
+FAILED tests/unit/core/test_dependencies.py::test_get_current_user_success - ...
+FAILED tests/unit/core/test_dependencies.py::test_get_current_user_invalid_token
+FAILED tests/unit/core/test_dependencies.py::test_get_current_user_invalid_subject
+FAILED tests/unit/core/test_dependencies.py::test_get_current_user_user_not_found
+FAILED tests/unit/core/test_dependencies.py::test_get_current_user_missing_subject
+ERROR tests/integration/routes/test_horarios_routes.py::test_admin_asigna_coordinacion_al_coordinador
+ERROR tests/integration/routes/test_user_routes.py::test_user_can_get_my_profile
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_get_my_profile
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_list_users
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_list_users
+ERROR tests/integration/routes/test_user_routes.py::test_get_user_without_token
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_get_user_by_uuid
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_get_user_by_uuid
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_get_inactive_users
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_get_inactive_users
+ERROR tests/integration/routes/test_user_routes.py::test_activate_user_without_token
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_activate_user
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_activate_user
+ERROR tests/integration/routes/test_user_routes.py::test_update_user_without_token
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_update_user
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_update_user
+ERROR tests/integration/routes/test_user_routes.py::test_delete_user_without_token
+ERROR tests/integration/routes/test_user_routes.py::test_user_cannot_delete_user
+ERROR tests/integration/routes/test_user_routes.py::test_admin_can_delete_user
+ERROR tests/integration/routes/test_user_routes.py::test_admin_role_cannot_be_changed_by_update
+ERROR tests/integration/routes/test_user_routes.py::test_inactive_admin_cannot_access_with_existing_token
+ERROR tests/integration/routes/test_user_routes.py::test_get_my_profile_with_token_from_another_user
+19 failed, 81 passed, 280 warnings, 22 errors in 7.45s
