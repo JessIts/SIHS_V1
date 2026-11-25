@@ -6,23 +6,22 @@ from sqlalchemy.orm import Session
 from app.common.responses import ApiResponse
 from app.controllers.user_controller import UserController
 from app.core.database import get_db
-from app.core.exceptions import NotFoundException
 from app.core.dependencies import (
     get_current_admin,
     get_current_manager,
     get_current_user,
 )
+from app.core.exceptions import NotFoundException
 from app.models.roles import UserRole
 from app.schemas.user import (
     UserCreate,
     UserPagination,
-    UserResponse,
-    UserUpdate,
     UserProfileUpdate,
+    UserResponse,
     UserRoleUpdate,
+    UserUpdate,
 )
 from app.services.user_service import UserService
-
 
 router = APIRouter(
     prefix="/users",

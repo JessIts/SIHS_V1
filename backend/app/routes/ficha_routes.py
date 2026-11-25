@@ -17,7 +17,6 @@ from app.schemas.ficha import (
 from app.schemas.user import UserResponse
 from app.services.ficha_service import FichaService
 
-
 router = APIRouter(
     prefix="/fichas",
     tags=["Fichas"],

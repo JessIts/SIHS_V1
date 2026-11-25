@@ -1,0 +1,27 @@
+# Linter del backend (PEP 8 + errores lógicos). Uso:
+#   ruff check .          -> revisa
+#   ruff check . --fix    -> corrige lo automático
+#   ruff format --check . -> (opcional) revisa el formato
+
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[lint]
+select = [
+    "E",   # pycodestyle: errores PEP 8
+    "W",   # pycodestyle: advertencias PEP 8
+    "F",   # pyflakes: nombres no definidos, imports sin usar...
+    "I",   # orden de imports
+    "B",   # bugbear: errores lógicos frecuentes
+    "UP",  # sintaxis moderna de Python 3.12
+]
+ignore = [
+    "B008",   # FastAPI usa Depends()/Query() en valores por defecto a propósito
+    "UP042",  # (str, Enum) se mantiene: StrEnum cambia cómo se serializan los enums
+    "UP046",  # Generic[T] se mantiene por compatibilidad con Pydantic/SQLAlchemy
+]
+
+[lint.per-file-ignores]
+# Las migraciones de Alembic se generan automáticamente
+"alembic/versions/*" = ["E501", "W291", "W293", "I001", "UP"]

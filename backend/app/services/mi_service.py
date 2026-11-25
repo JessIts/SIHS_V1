@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import MANAGER_ROLES
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.models.competencia import Competencia
+from app.models.enums import EstadoTrimestre
 from app.models.ficha import Ficha, ficha_aprendiz
 from app.models.ficha_trimestre import FichaTrimestre
 from app.models.horario import Horario
@@ -13,7 +14,6 @@ from app.models.programa import Programa
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.roles import UserRole
 from app.models.trimestre import Trimestre
-from app.models.enums import EstadoTrimestre
 from app.models.user import User
 from app.repositories.ficha_trimestre_repository import FichaTrimestreRepository
 from app.repositories.horario_repository import HorarioRepository

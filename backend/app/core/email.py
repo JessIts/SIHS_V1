@@ -4,7 +4,6 @@ from email.message import EmailMessage
 
 from app.core.config import settings
 
-
 logger = logging.getLogger("sihs.email")
 
 
@@ -28,7 +27,8 @@ def send_email(
             subject,
             text,
         )
-        print(f"\n===== CORREO (SMTP no configurado) =====\nPara: {to}\nAsunto: {subject}\n\n{text}\n========================================\n")
+        separador = "=" * 40
+        print(f"\n{separador}\nCORREO (SMTP no configurado)\nPara: {to}\nAsunto: {subject}\n\n{text}\n{separador}\n")
         return
 
     message = EmailMessage()

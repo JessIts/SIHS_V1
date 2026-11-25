@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "Sistema de Información API"
     app_version: str = "1.0.0"
     debug: bool = False
-    
+
     database_url: str
 
     jwt_secret_key: str
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from: str = "SIHS <no-reply@sihs.local>"
     smtp_use_tls: bool = True
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -33,4 +33,4 @@ class Settings(BaseSettings):
     )
 
 
-settings = Settings()
+settings = Settings()

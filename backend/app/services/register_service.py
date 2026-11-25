@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.user import UserCreate
 from app.schemas.register import RegisterRequest
+from app.schemas.user import UserCreate
 from app.services.user_service import UserService
 
 

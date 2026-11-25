@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.programa import Programa
+    from app.models.resultado_aprendizaje import ResultadoAprendizaje
+
 
 
 class Competencia(BaseModel):

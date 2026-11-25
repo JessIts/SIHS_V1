@@ -2,9 +2,8 @@ from uuid import UUID
 
 from app.models.roles import UserRole
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserProfileUpdate, UserRoleUpdate
+from app.schemas.user import UserCreate, UserProfileUpdate, UserRoleUpdate, UserUpdate
 from app.services.user_service import UserService
-from sqlalchemy import func, select
 
 
 class UserController:

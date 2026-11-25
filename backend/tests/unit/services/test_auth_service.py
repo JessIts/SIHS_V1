@@ -42,7 +42,7 @@ def test_authenticate_user_success():
     repository.get_by_email.assert_called_once_with(
         "angel@example.com"
     )
-    
+
 def test_authenticate_user_not_found():
     db = MagicMock()
     repository = MagicMock()
@@ -58,7 +58,7 @@ def test_authenticate_user_not_found():
         )
 
     assert exc_info.value.message == "Credenciales inválidas."
-    
+
 def test_authenticate_user_invalid_password():
     db = MagicMock()
     repository = MagicMock()
@@ -88,7 +88,7 @@ def test_authenticate_user_invalid_password():
         )
 
     assert exc_info.value.message == "Credenciales inválidas."
-    
+
 def test_authenticate_user_inactive():
     db = MagicMock()
     repository = MagicMock()

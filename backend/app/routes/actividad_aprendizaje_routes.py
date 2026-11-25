@@ -15,7 +15,6 @@ from app.schemas.actividad_aprendizaje import (
 )
 from app.services.actividad_aprendizaje_service import ActividadAprendizajeService
 
-
 router = APIRouter(
     prefix="/actividades-aprendizaje",
     tags=["Actividades de aprendizaje"],

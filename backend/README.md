@@ -1,1315 +1,310 @@
 # SISTEMA SIHS — Backend API
 
-Backend del **Sistema de Información SIHS**, construido con **FastAPI**, **SQLAlchemy**, **PostgreSQL** y autenticación mediante **JWT**.
+API REST del Sistema de Información de Horarios (SIHS). Gestiona la programación de clases de las fichas de formación por trimestre, día y franja. Impide choques de ficha, instructor y ambiente, y controla el acceso por rol y por coordinación.
 
-El proyecto sigue una arquitectura por capas, buscando mantener separadas las responsabilidades entre rutas, controladores, servicios, repositorios, modelos y esquemas.
+Es el **4.° backend del programa** y el primero construido en Python. La comparación con los anteriores está en `../_docs/cierre/reflexion-backends.md`.
+
+---
+
+## Contenido
+
+1. [Estado actual](#estado-actual)
+2. [Tecnologías](#tecnologías)
+3. [Arquitectura](#arquitectura)
+4. [Instalación desde cero](#instalación-desde-cero)
+5. [Autenticación y roles](#autenticación-y-roles)
+6. [Documentación de la API](#documentación-de-la-api)
+7. [Pruebas](#pruebas)
+8. [Calidad de código](#calidad-de-código)
+9. [Estructura de carpetas](#estructura-de-carpetas)
 
 ---
 
 ## Estado actual
 
-### Autenticación y autorización
-
-* [x] Registro público de usuarios
-* [x] Hash de contraseñas con Argon2
-* [x] Login mediante email y contraseña
-* [x] Generación de JWT
-* [x] Validación de firma JWT
-* [x] Validación de expiración
-* [x] Validación del algoritmo JWT
-* [x] Validación del `sub`
-* [x] Validación de UUID del usuario
-* [x] Validación de usuario activo
-* [x] Autenticación mediante Bearer Token
-* [x] Autorización por roles
-* [x] Rol `USER`
-* [x] Rol `ADMIN`
-* [x] Protección de endpoints administrativos
-* [x] Desactivación lógica de usuarios
-* [x] Activación de usuarios
-* [x] Protección contra modificación del rol mediante actualización pública
-
-### Pruebas
-
-La suite actual cuenta con:
-
-**103 tests pasando.**
-
-```text
-103 passed
-```
-
-Las pruebas cubren principalmente:
-
-* Registro
-* Usuarios
-* Roles
-* Autenticación
-* JWT
-* Autorización
-* Usuarios activos/inactivos
-* Permisos administrativos
-* Casos de tokens inválidos
-* Expiración de tokens
-* Algoritmos JWT
-* Integridad del `sub`
-* Acceso a `/users/me`
+| Módulo | Estado |
+|---|---|
+| Registro, login y logout con JWT en cookie httponly | ✅ |
+| Recuperación de contraseña con enlace de un solo uso | ✅ |
+| Roles: admin, coordinador, instructor, aprendiz, user | ✅ |
+| Ambientes repartidos por coordinación | ✅ |
+| CRUD de sedes, ambientes, coordinaciones, programas, competencias, resultados y actividades | ✅ |
+| Catálogos de calendario: jornadas, franjas, días y trimestres | ✅ |
+| Fichas, aprendices por ficha y programación por trimestre | ✅ |
+| Horarios con reglas anti-choque (API + trigger en la BD) y grilla por ficha | ✅ |
+| Paneles personales (`/mi/*`) y resumen para dashboards | ✅ |
+| Carga masiva de horarios por archivo | ⏳ Pasa a T7 (hoy existe como prototipo SQL en `../db_horarios`) |
 
 ---
 
-# Tecnologías
+## Tecnologías
 
-## Backend
-
-* Python
-* FastAPI
-* SQLAlchemy
-* PostgreSQL
-* Pydantic
-* Pydantic Settings
-
-## Seguridad
-
-* PyJWT
-* Argon2
-
-## Testing
-
-* pytest
-* FastAPI `TestClient`
-
-## Base de datos
-
-* PostgreSQL
-* SQLAlchemy ORM
-* Psycopg
+| Uso | Herramienta |
+|---|---|
+| Framework web | FastAPI 0.141 |
+| ORM y migraciones | SQLAlchemy 2.0 · Alembic |
+| Base de datos | PostgreSQL 16 (psycopg 3) |
+| Validación | Pydantic v2 · pydantic-settings |
+| Seguridad | PyJWT (HS256) · Argon2 |
+| Pruebas | pytest · TestClient · pytest-cov |
+| Linter | ruff (PEP 8 y errores lógicos) |
 
 ---
 
-# Arquitectura
+## Arquitectura
 
-El proyecto utiliza una arquitectura por capas:
+Arquitectura por capas. Cada capa solo conoce a la de abajo:
 
 ```text
 HTTP Request
      │
      ▼
-   Routes
+   Routes        → definen el endpoint, sus dependencias (sesión, rol) y el schema de respuesta
      │
      ▼
- Controllers
+ Controllers     → coordinan la operación y convierten resultados a schemas
      │
      ▼
-  Services
+  Services       → lógica de negocio: reglas de horarios, permisos por coordinación, recuperación…
      │
      ▼
- Repositories
+ Repositories    → consultas a la base de datos (sin lógica de negocio)
      │
      ▼
- SQLAlchemy Models
+SQLAlchemy Models
      │
      ▼
- PostgreSQL
+ PostgreSQL      → constraints y trigger fn_validar_horario como última barrera
 ```
 
-Las responsabilidades principales son:
+**Piezas transversales:**
+- **`BaseService` / `BaseRepository`:** CRUD genérico con UUID público, paginación, filtros y borrado lógico (`is_active`).
+- **`AccessScope` (`app/core/scope.py`):** alcance de los datos según el usuario. El admin ve todo; el coordinador solo su coordinación.
+- **`ApiResponse[T]`:** formato único de respuesta, `{ success, message, data }`.
+- **Excepciones de dominio:** `NotFound`, `Conflict`, `Forbidden`, `Unauthorized` y `Validation`, traducidas a 404, 409, 403, 401 y 422.
 
-### Routes
-
-Responsables de:
-
-* Definir endpoints.
-* Recibir requests.
-* Declarar dependencias.
-* Definir response models.
-* Delegar la operación al controller.
-
-Las rutas no deben contener lógica de negocio compleja.
+El diagrama completo del sistema está en `../_docs/arquitectura/arquitectura.md`.
 
 ---
 
-### Controllers
+## Instalación desde cero
 
-Responsables de:
+Requisitos: Python 3.12+ y PostgreSQL 16.
 
-* Coordinar la operación.
-* Recibir schemas.
-* Invocar servicios.
-* Transformar resultados al schema correspondiente.
+```bash
+cd backend
 
----
-
-### Services
-
-Contienen la lógica de negocio.
-
-Por ejemplo, el proceso de autenticación:
-
-```text
-email + password
-       │
-       ▼
-buscar usuario
-       │
-       ├── no existe ──────► 401
-       │
-       ▼
-verificar password
-       │
-       ├── incorrecta ─────► 401
-       │
-       ▼
-verificar usuario activo
-       │
-       ├── inactivo ───────► 401
-       │
-       ▼
-crear JWT
-       │
-       ▼
-access_token
-```
-
----
-
-### Repositories
-
-Responsables de acceder a la base de datos.
-
-Ejemplo:
-
-```text
-AuthService
-     │
-     ▼
-UserRepository
-     │
-     ▼
-PostgreSQL
-```
-
-Esto permite evitar que los servicios tengan consultas SQL/ORM directamente mezcladas con la lógica de negocio.
-
----
-
-### Models
-
-Representan las entidades persistidas en PostgreSQL mediante SQLAlchemy.
-
-Actualmente la entidad principal implementada es:
-
-```text
-User
-```
-
----
-
-### Schemas
-
-Definen:
-
-* Requests.
-* Responses.
-* Validación de datos.
-* Contratos de la API.
-
----
-
-# Estructura actual
-
-La estructura principal del proyecto sigue aproximadamente este esquema:
-
-```text
-backend/
-│
-├── app/
-│   ├── common/
-│   │   └── responses.py
-│   │
-│   ├── controllers/
-│   │   └── auth_controller.py
-│   │
-│   ├── core/
-│   │   ├── config.py
-│   │   ├── database.py
-│   │   ├── dependencies.py
-│   │   ├── exceptions.py
-│   │   └── security.py
-│   │
-│   ├── models/
-│   │   ├── base.py
-│   │   ├── roles.py
-│   │   └── user.py
-│   │
-│   ├── repositories/
-│   │   └── user_repository.py
-│   │
-│   ├── routes/
-│   │   ├── auth_routes.py
-│   │   └── user_routes.py
-│   │
-│   ├── schemas/
-│   │   ├── auth.py
-│   │   └── user.py
-│   │
-│   ├── services/
-│   │   └── auth_service.py
-│   │
-│   └── main.py
-│
-├── tests/
-│   ├── integration/
-│   │   └── routes/
-│   │       ├── test_auth_routes.py
-│   │       └── test_user_routes.py
-│   │
-│   └── conftest.py
-│
-├── .env
-├── requirements.txt
-└── README.md
-```
-
-> La estructura puede crecer conforme se incorporen nuevos módulos funcionales al SIHS.
-
----
-
-# Configuración
-
-La aplicación utiliza variables de entorno mediante `pydantic-settings`.
-
-Configuración actual:
-
-```python
-class Settings(BaseSettings):
-    app_name: str = "Sistema de Información API"
-    app_version: str = "1.0.0"
-    debug: bool = False
-
-    database_url: str
-
-    jwt_secret_key: str
-    jwt_algorithm: str = "HS256"
-    jwt_access_token_expire_minutes: int = 5
-```
-
----
-
-# Variables de entorno
-
-Crear un archivo `.env` dentro de `backend/`.
-
-Ejemplo:
-
-```env
-DATABASE_URL=postgresql+psycopg://postgres:password@localhost:5432/sihs
-
-JWT_SECRET_KEY=una-clave-secreta-segura
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=5
-```
-
-### Importante
-
-El `.env` no debe subirse al repositorio.
-
-Agregar:
-
-```text
-.env
-```
-
-al `.gitignore`.
-
-En producción, `JWT_SECRET_KEY` debe utilizar una clave fuerte y generada de forma segura.
-
----
-
-# Base de datos
-
-La aplicación utiliza PostgreSQL.
-
-La URL se configura mediante:
-
-```env
-DATABASE_URL=...
-```
-
-Para las pruebas de integración se utiliza una base de datos independiente.
-
-Actualmente la configuración de testing utiliza:
-
-```text
-postgresql+psycopg://postgres:admin@localhost:5433/sihs_test
-```
-
-o el valor definido en:
-
-```env
-TEST_DATABASE_URL
-```
-
----
-
-# Instalación
-
-## 1. Crear entorno virtual
-
-Desde `backend`:
-
-```powershell
+# 1. Entorno virtual
 python -m venv .venv
-```
+source .venv/Scripts/activate      # Windows (Git Bash)
+# .\.venv\Scripts\Activate.ps1     # Windows (PowerShell)
+# source .venv/bin/activate        # Linux / macOS
 
----
+# 2. Dependencias (requirements-dev.txt incluye las de pruebas y el linter)
+pip install -r requirements-dev.txt
 
-## 2. Activar entorno virtual
+# 3. Variables de entorno
+cp .env.example .env               # completar DATABASE_URL y JWT_SECRET_KEY
 
-Windows PowerShell:
+# 4. Base de datos
+createdb sihs                      # o desde pgAdmin
+alembic upgrade head
 
-```powershell
-.venv\Scripts\Activate.ps1
-```
+# 5. Datos de prueba (opcional; idempotente)
+python -m scripts.seed_horarios
 
----
+# 6. Administrador: registra un usuario (pantalla /register o POST /auth/register)
+#    y luego promuévelo
+python -m scripts.create_admin tu_correo@example.com
 
-## 3. Instalar dependencias
-
-```powershell
-pip install -r requirements.txt
-```
-
----
-
-## 4. Configurar `.env`
-
-Crear:
-
-```text
-backend/.env
-```
-
-con las variables necesarias.
-
----
-
-# Ejecutar la aplicación
-
-Desde el directorio `backend`:
-
-```powershell
+# 7. Ejecutar
 uvicorn app.main:app --reload
 ```
 
-La API estará disponible normalmente en:
+**Variables de entorno** (detalle en `.env.example`):
 
-```text
-http://127.0.0.1:8000
-```
+| Variable | Obligatoria | Uso |
+|---|---|---|
+| `DATABASE_URL` | Sí | Conexión a PostgreSQL |
+| `JWT_SECRET_KEY` | Sí | Firma de los tokens |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | No (5) | Duración de la sesión |
+| `FRONTEND_URL` | No | Base del enlace de recuperación de contraseña |
+| `PASSWORD_RESET_EXPIRE_MINUTES` | No (30) | Vigencia del enlace |
+| `SMTP_*` | No | Envío de correos. Sin `SMTP_HOST`, el correo se muestra en la consola |
 
----
+**Cuentas del seed:**
 
-# Documentación de la API
-
-FastAPI proporciona automáticamente:
-
-```text
-/docs
-```
-
-Swagger UI:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-También está disponible:
-
-```text
-/redoc
-```
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Coordinador | `coordinacion.mercadeo@example.com` | `Coordinador123*` |
+| Instructor | `carlos.perez@example.com` (y 29 más) | `Instructor123*` |
+| Aprendiz | `sofia.martinez@example.com` (y 29 más) | `Aprendiz123*` |
 
 ---
 
-# Versionado de API
+## Autenticación y roles
 
-Actualmente los endpoints utilizan:
+**Sesión:**
+1. `POST /auth/login` valida las credenciales y entrega el JWT en una **cookie httponly** `access_token`. JavaScript no puede leerla, y el navegador la envía sola en cada petición.
+2. `get_current_user` lee la cookie y valida firma, algoritmo, expiración, `sub` (UUID) y que el usuario esté activo.
+3. `POST /auth/logout` borra la cookie.
 
-```text
-/api/v1
-```
+**Correos:** se guardan en minúsculas, así que el mismo correo escrito con otras mayúsculas es la misma cuenta.
 
-Esto permite mantener compatibilidad futura si se desarrolla una nueva versión de la API.
+**Recuperación de contraseña:**
+1. `POST /auth/password/forgot` responde igual exista o no el correo.
+2. Se genera un token aleatorio que vence en 30 minutos, sirve una sola vez y se guarda en la BD solo como hash SHA-256.
+3. `POST /auth/password/reset` define la nueva contraseña.
+
+**Roles:**
+
+| Rol | Puede |
+|---|---|
+| `admin` | Todo: usuarios, catálogos, fichas, ambientes (y su reparto entre coordinaciones) y horarios |
+| `coordinador` | Registrar, editar y eliminar **horarios** de las fichas de su coordinación, usando solo los ambientes asignados a ella. Consulta sus fichas, programaciones, ambientes, catálogos e instructores |
+| `instructor` | Consultar su agenda, sus fichas y sus programas (`/mi/*`) y editar sus datos básicos |
+| `aprendiz` | Consultar su ficha, su horario y su programa (`/mi/*`) y editar sus datos básicos |
+| `user` | Rol inicial del registro público hasta que el admin le asigne uno |
+
+**Reglas de horarios** (validadas en el servicio y otra vez en la BD):
+- Sin choques: una ficha, un instructor o un ambiente no pueden tener dos clases en el mismo trimestre, día y franja.
+- Una clase presencial requiere ambiente; una sincrónica no lleva ambiente.
+- El resultado de aprendizaje debe ser del programa de la ficha, y el instructor debe tener rol instructor.
+- Ningún usuario, ni el admin, puede usar el ambiente de otra coordinación.
+- Un ambiente con clases no se puede reasignar a otra coordinación.
 
 ---
 
-# Usuarios
+## Documentación de la API
 
-## Registro
+Con el backend corriendo:
 
-Endpoint:
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
+- **Colección de Postman con tests:** `../_docs/pruebas/postman/`
 
-```http
-POST /api/v1/users
-```
+Todas las rutas usan el prefijo `/api/v1`.
 
-El registro es público.
+**Recursos CRUD.** Todos siguen el mismo patrón:
+- `GET` para listar (paginado y con filtros) y `GET /{uuid}` para consultar uno.
+- `POST`, `PUT /{uuid}` y `DELETE /{uuid}` (borrado lógico).
+- `GET /inactive` y `PATCH /{uuid}/activate`.
 
-Ejemplo:
+| Recurso | Ruta | Leer | Escribir |
+|---|---|---|---|
+| Sedes | `/sedes` | admin, coordinador | admin |
+| Ambientes | `/ambientes` (filtros: sede, coordinación, sin coordinación) | admin · coordinador (solo los suyos) | admin |
+| Coordinaciones | `/coordinaciones` (+ `/{uuid}/sedes/{sede}`) | admin, coordinador | admin |
+| Programas | `/programas` | admin, coordinador | admin |
+| Competencias | `/competencias` | admin, coordinador | admin |
+| Resultados de aprendizaje | `/resultados-aprendizaje` | admin, coordinador | admin |
+| Actividades de aprendizaje | `/actividades-aprendizaje` | admin, coordinador | admin |
+| Jornadas · Franjas · Días | `/jornadas` · `/franjas-horarias` · `/dias-semana` | admin, coordinador | admin |
+| Trimestres | `/trimestres` | admin, coordinador | admin |
+| Fichas | `/fichas` (+ `/{uuid}/aprendices`) | admin · coordinador (solo las suyas) | admin |
+| Fichas por trimestre | `/fichas-trimestre` | admin · coordinador (solo las suyas) | admin |
+| **Horarios** | `/horarios` | admin · coordinador (solo los suyos) | **admin, coordinador** |
+
+**Otros endpoints:**
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| POST | `/auth/register` | público | Registro (rol `user`) |
+| POST | `/auth/login` · `/auth/logout` | público | Inicia o cierra la sesión (cookie) |
+| POST | `/auth/password/forgot` | público | Pide el enlace de recuperación |
+| GET | `/auth/password/reset/validate?token=` | público | Verifica el enlace |
+| POST | `/auth/password/reset` | público | Define la nueva contraseña |
+| GET · PUT | `/users/me` | autenticado | Ver y editar mis datos básicos |
+| GET | `/users` · `/users/{uuid}` | admin · coordinador (solo instructores) | Listar y consultar usuarios |
+| POST · PUT · DELETE | `/users` · `/users/{uuid}` | admin | Gestión de cuentas |
+| PATCH | `/users/{uuid}/role` | admin | Cambia el rol (y la coordinación de un coordinador) |
+| GET | `/horarios/grilla/{ficha_trimestre_uuid}` | admin, coordinador | Horario de la ficha en formato franjas × días |
+| GET | `/dashboard/resumen` | admin, coordinador | Conteos y programaciones (por coordinación para el coordinador) |
+| GET | `/mi/fichas` · `/mi/programas` · `/mi/agenda` · `/mi/horarios/{ft}` | autenticado | Información personal de aprendices e instructores |
+| GET | `/health` | público | Estado del servicio |
+
+**Respuestas:**
 
 ```json
-{
-    "name": "Juan Pérez",
-    "email": "juan@example.com",
-    "phone": "3001234567",
-    "document_number": "DOC-001",
-    "password": "Password123!"
-}
+{ "success": true, "message": "Casilla de horario creada correctamente.", "data": { "...": "..." } }
+{ "success": false, "message": "El instructor ya tiene clase en ese día y franja." }
 ```
 
-El usuario registrado recibe automáticamente:
-
-```text
-USER
-```
-
-El cliente no puede especificar el rol durante el registro.
-
-Esto evita que alguien pueda crear directamente un usuario administrador enviando:
-
-```json
-{
-    "role": "ADMIN"
-}
-```
+| Código | Cuándo |
+|---|---|
+| 200 / 201 / 204 | Éxito |
+| 401 | Sin sesión, token inválido o vencido, credenciales incorrectas |
+| 403 | El rol o la coordinación no permiten la operación |
+| 404 | No existe, o está fuera del alcance del usuario |
+| 409 | Choque o duplicado: horario, correo, código de ficha |
+| 422 | Datos inválidos o regla de negocio incumplida |
 
 ---
 
-# Roles
+## Pruebas
 
-Actualmente existen:
+El plan, la matriz de casos, el reporte y los defectos están en `../_docs/pruebas/`.
 
-```text
-USER
-ADMIN
+```bash
+pytest                                 # 129 pruebas
+pytest --cov --cov-report=term         # con cobertura
+pytest --cov --cov-report=html         # reporte navegable en htmlcov/
 ```
 
-## USER
+| Nivel | Cantidad | Ubicación |
+|---|---|---|
+| Unitarias | 54 | `tests/unit/` |
+| Integración (API + PostgreSQL) | 75 | `tests/integration/` |
+| API (Postman) | 29 peticiones / 48 tests | `../_docs/pruebas/postman/` |
+| E2E (Playwright) | 2 | `../frontend/E2E/` |
 
-Un usuario normal puede:
+**Último resultado:** 129/129, estable en 10 ejecuciones seguidas.
 
-* Autenticarse.
-* Consultar su propio perfil.
-* Utilizar los endpoints que posteriormente se definan para usuarios normales.
+**Cobertura:** 87 % en total; 90 % en el servicio de horarios (módulo crítico) y 97 % en sus rutas.
 
-No puede:
-
-* Listar todos los usuarios.
-* Consultar otros usuarios.
-* Activar usuarios.
-* Desactivar usuarios.
-* Modificar usuarios administrativamente.
+**Ambiente de pruebas separado:** se usa la base `sihs_test`, configurable con `TEST_DATABASE_URL`. Las tablas se crean al iniciar la sesión de pruebas y se eliminan al terminar.
 
 ---
 
-## ADMIN
+## Calidad de código
 
-Un administrador puede acceder a las operaciones administrativas de usuarios.
+```bash
+ruff check .          # 0 errores
+ruff check . --fix    # corrige lo automático
+```
 
-Actualmente puede:
+Reglas activas (`ruff.toml`):
+- `E` y `W`: PEP 8.
+- `F`: pyflakes.
+- `I`: orden de imports.
+- `B`: bugbear.
+- `UP`: sintaxis moderna.
 
-* Listar usuarios.
-* Listar usuarios inactivos.
-* Consultar un usuario específico.
-* Activar usuarios.
-* Actualizar usuarios.
-* Desactivar usuarios.
+`B008` se ignora porque FastAPI usa `Depends()` y `Query()` como valores por defecto a propósito.
 
 ---
 
-# Autenticación
-
-## Login
-
-Endpoint:
-
-```http
-POST /api/v1/auth/login
-```
-
-Request:
-
-```json
-{
-    "email": "juan@example.com",
-    "password": "Password123!"
-}
-```
-
-Response:
-
-```json
-{
-    "data": {
-        "access_token": "...",
-        "token_type": "bearer"
-    }
-}
-```
-
----
-
-# JWT
-
-Los tokens utilizan actualmente:
-
-```text
-Algorithm: HS256
-```
-
-El token contiene:
-
-```json
-{
-    "sub": "UUID_DEL_USUARIO",
-    "exp": "FECHA_DE_EXPIRACION"
-}
-```
-
-## `sub`
-
-Contiene el UUID del usuario autenticado.
-
-Ejemplo:
-
-```text
-sub = 8d7c...
-```
-
-## `exp`
-
-Define la fecha de expiración del token.
-
-Actualmente:
-
-```text
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=5
-```
-
----
-
-# Validación del JWT
-
-Los tokens son validados mediante:
-
-```python
-jwt.decode(
-    token,
-    settings.jwt_secret_key,
-    algorithms=[settings.jwt_algorithm],
-)
-```
-
-Esto garantiza que el algoritmo aceptado sea explícitamente el configurado.
-
-Se rechazan:
-
-* Tokens expirados.
-* Tokens con firma inválida.
-* Tokens malformados.
-* Tokens con algoritmo incorrecto.
-* Tokens con algoritmo `none`.
-* Tokens sin `sub`.
-* Tokens con `sub` que no sea un UUID válido.
-* Tokens correspondientes a usuarios inexistentes.
-* Tokens correspondientes a usuarios inactivos.
-
----
-
-# Bearer Authentication
-
-Los endpoints protegidos utilizan:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-FastAPI obtiene el token mediante `HTTPBearer`.
-
-El flujo es:
-
-```text
-Authorization Header
-        │
-        ▼
-    HTTPBearer
-        │
-        ▼
-  JWT validation
-        │
-        ▼
-   UUID validation
-        │
-        ▼
- Find active user
-        │
-        ▼
- Current User
-```
-
----
-
-# Dependencias de autenticación
-
-La aplicación utiliza:
-
-```python
-get_current_user
-```
-
-para obtener el usuario autenticado.
-
-Y:
-
-```python
-get_current_admin
-```
-
-para proteger endpoints administrativos.
-
-La diferencia conceptual es:
-
-```text
-get_current_user
-        ↓
-¿Token válido?
-        ↓
-¿Usuario existe y está activo?
-        ↓
-Usuario autenticado
-```
-
-Mientras que:
-
-```text
-get_current_admin
-        ↓
-get_current_user
-        ↓
-¿role == ADMIN?
-        ↓
-Administrador autorizado
-```
-
----
-
-# Códigos HTTP de seguridad
-
-La aplicación diferencia correctamente entre:
-
-### `401 Unauthorized`
-
-Se utiliza cuando la identidad no puede ser autenticada.
-
-Ejemplos:
-
-* No hay token.
-* Token inválido.
-* Token expirado.
-* Firma incorrecta.
-* Usuario inexistente.
-* Usuario inactivo.
-* Credenciales incorrectas.
-
----
-
-### `403 Forbidden`
-
-Se utiliza cuando el usuario está autenticado pero no tiene permisos suficientes.
-
-Ejemplo:
-
-```text
-USER → endpoint ADMIN
-```
-
-Resultado:
-
-```http
-403 Forbidden
-```
-
-Mensaje:
-
-```text
-Permisos insuficientes.
-```
-
----
-
-# Endpoints actuales
-
-## Públicos
-
-### Registro
-
-```http
-POST /api/v1/users
-```
-
-### Login
-
-```http
-POST /api/v1/auth/login
-```
-
----
-
-## Usuario autenticado
-
-### Mi perfil
-
-```http
-GET /api/v1/users/me
-```
-
-Requiere:
-
-```http
-Authorization: Bearer <token>
-```
-
-Disponible para:
-
-```text
-USER
-ADMIN
-```
-
----
-
-## Administración de usuarios
-
-Requieren rol:
-
-```text
-ADMIN
-```
-
-### Listar usuarios
-
-```http
-GET /api/v1/users
-```
-
-### Listar usuarios inactivos
-
-```http
-GET /api/v1/users/inactive
-```
-
-### Consultar usuario
-
-```http
-GET /api/v1/users/{user_uuid}
-```
-
-### Activar usuario
-
-```http
-PATCH /api/v1/users/{user_uuid}/activate
-```
-
-### Actualizar usuario
-
-```http
-PUT /api/v1/users/{user_uuid}
-```
-
-### Desactivar usuario
-
-```http
-DELETE /api/v1/users/{user_uuid}
-```
-
----
-
-# Desactivación de usuarios
-
-La eliminación de usuarios es **lógica**, no física.
-
-Cuando un administrador elimina/desactiva un usuario:
-
-```text
-is_active = False
-```
-
-El registro permanece en PostgreSQL.
-
-Esto permite conservar la información y evitar la eliminación física de registros relacionados.
-
-Un usuario inactivo:
-
-* No puede iniciar sesión.
-* No puede utilizar un token previamente generado.
-* No puede acceder a endpoints protegidos.
-* Puede ser reactivado por un administrador.
-
----
-
-# Seguridad del rol
-
-El rol no forma parte de:
-
-```text
-UserCreate
-```
-
-ni puede modificarse mediante:
-
-```text
-UserUpdate
-```
-
-Por lo tanto, un usuario no puede enviar:
-
-```json
-{
-    "role": "ADMIN"
-}
-```
-
-para convertirse en administrador.
-
-El rol de administrador se asigna mediante un proceso controlado.
-
----
-
-# Respuestas de la API
-
-La aplicación utiliza una respuesta común:
-
-```text
-ApiResponse
-```
-
-Esto permite mantener una estructura consistente para las respuestas de los endpoints.
-
-Por ejemplo:
-
-```json
-{
-    "success": true,
-    "message": "Inicio de sesión exitoso.",
-    "data": {
-        "access_token": "...",
-        "token_type": "bearer"
-    }
-}
-```
-
-Los errores utilizan las excepciones personalizadas definidas en:
-
-```text
-app/core/exceptions.py
-```
-
----
-
-# Manejo de contraseñas
-
-Las contraseñas nunca se almacenan en texto plano.
-
-Durante el registro:
-
-```text
-password
-
-   ↓
-Argon2
-   ↓
-password_hash
-   ↓
-PostgreSQL
-```
-
-Durante el login:
-
-```text
-password ingresado
-       ↓
-verify_password()
-       ↓
-Argon2
-       ↓
-comparación con password_hash
-```
-
-La aplicación no devuelve el hash de contraseña mediante la API.
-
----
-
-# Tests
-
-Los tests de integración utilizan:
-
-```text
-pytest
-```
-
-y:
-
-```text
-FastAPI TestClient
-```
-
-La base de datos utilizada durante las pruebas es PostgreSQL independiente de la base de desarrollo.
-
----
-
-# Ejecutar todos los tests
-
-Desde:
+## Estructura de carpetas
 
 ```text
 backend/
+├── alembic/versions/      Migraciones (incluye el trigger fn_validar_horario)
+├── app/
+│   ├── common/            ApiResponse y paginación
+│   ├── controllers/
+│   ├── core/              config, BD, seguridad, dependencias, alcance, correo, excepciones
+│   ├── models/
+│   ├── repositories/
+│   ├── routes/            un archivo por recurso + router.py
+│   ├── schemas/
+│   └── services/
+├── scripts/               create_admin.py · seed_horarios.py
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── .env.example
+├── pyproject.toml         configuración de pytest y cobertura
+├── ruff.toml              configuración del linter
+├── requirements.txt
+└── requirements-dev.txt
 ```
-
-ejecutar:
-
-```powershell
-pytest -v
-```
-
-Resultado actual:
-
-```text
-103 passed
-```
-
----
-
-# Tests de autenticación
-
-Archivo:
-
-```text
-tests/integration/routes/test_auth_routes.py
-```
-
-Actualmente cubre:
-
-* Login exitoso.
-* Password incorrecta.
-* Usuario inexistente.
-* Usuario inactivo.
-* `sub` correcto.
-* JWT utilizable en `/users/me`.
-* No exposición de existencia de usuario ante credenciales inválidas.
-* Usuario inactivo sin `access_token`.
-* Claims obligatorios.
-* Algoritmo configurado.
-* Expiración configurada correctamente.
-
----
-
-# Tests de usuarios y autorización
-
-Archivo:
-
-```text
-tests/integration/routes/test_user_routes.py
-```
-
-Incluye pruebas para:
-
-* `/users/me`.
-* Autenticación requerida.
-* USER.
-* ADMIN.
-* Acceso administrativo.
-* Restricciones de rol.
-* Activación.
-* Desactivación lógica.
-* Actualización.
-* Tokens inválidos.
-* Tokens expirados.
-* Firma inválida.
-* UUID inválido.
-* `sub` ausente.
-* Algoritmo incorrecto.
-* Algoritmo `none`.
-* Bearer inválido.
-* Usuarios inexistentes/inactivos.
-
----
-
-# Filosofía de testing
-
-La estrategia actual es:
-
-```text
-Cambiar una funcionalidad
-        ↓
-Agregar pruebas
-        ↓
-Ejecutar pruebas específicas
-        ↓
-Corregir
-        ↓
-Ejecutar suite completa
-        ↓
-Continuar
-```
-
-Esto permite detectar rápidamente regresiones.
-
-Los datos creados durante las pruebas utilizan identificadores únicos cuando es necesario para evitar colisiones entre tests.
-
----
-
-# Decisiones de diseño actuales
-
-## Registro público
-
-El registro siempre crea:
-
-```text
-UserRole.USER
-```
-
-El cliente no controla el rol.
-
----
-
-## Administración
-
-Las operaciones administrativas están protegidas mediante:
-
-```python
-get_current_admin
-```
-
----
-
-## Eliminación
-
-Los usuarios no se eliminan físicamente.
-
-Se utiliza:
-
-```text
-is_active = False
-```
-
----
-
-## Autenticación
-
-Se utiliza JWT stateless con expiración.
-
-Actualmente no existe un sistema de refresh tokens ni blacklist.
-
----
-
-## Contraseñas
-
-Se utiliza Argon2 para almacenamiento seguro de contraseñas.
-
----
-
-## Separación de responsabilidades
-
-Las rutas no contienen la lógica de negocio principal.
-
-La responsabilidad se divide entre:
-
-```text
-Routes
-Controllers
-Services
-Repositories
-Models
-Schemas
-Core
-```
-
----
-
-# Flujo completo de autenticación
-
-## Registro
-
-```text
-POST /users
-      │
-      ▼
- UserController
-      │
-      ▼
- UserService
-      │
-      ▼
- hash_password()
-      │
-      ▼
- UserRepository
-      │
-      ▼
- PostgreSQL
-```
-
----
-
-## Login
-
-```text
-POST /auth/login
-      │
-      ▼
-AuthController
-      │
-      ▼
-AuthService
-      │
-      ├── UserRepository
-      │
-      ├── verify_password()
-      │
-      └── create_access_token()
-                    │
-                    ▼
-                 JWT
-```
-
----
-
-## Endpoint protegido
-
-```text
-GET /users/me
-      │
-      ▼
- HTTPBearer
-      │
-      ▼
- get_current_user
-      │
-      ▼
- decode_access_token
-      │
-      ▼
- validar JWT
-      │
-      ▼
- UUID
-      │
-      ▼
- UserRepository
-      │
-      ▼
- usuario activo
-      │
-      ▼
- endpoint
-```
-
----
-
-## Endpoint administrativo
-
-```text
-GET /users
-      │
-      ▼
- get_current_admin
-      │
-      ▼
- get_current_user
-      │
-      ▼
- validar JWT
-      │
-      ▼
- buscar usuario
-      │
-      ▼
- verificar role
-      │
-      ├── ADMIN → continúa
-      │
-      └── USER  → 403
-```
-
----
-
-# Próximas etapas
-
-La autenticación y autorización básica están actualmente consolidadas.
-
-Los siguientes módulos pueden desarrollarse sobre esta base:
-
-```text
-┌─────────────────────────────┐
-│ Autenticación               │
-│ JWT + Roles + Users         │
-│           ✓                 │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ Próximo módulo SIHS         │
-└──────────────┬──────────────┘
-               │
-               ▼
-       nuevos módulos
-       de negocio del SIHS
-```
-
-Antes de implementar nuevos módulos, se recomienda mantener el mismo patrón:
-
-```text
-Model
-   ↓
-Schema
-   ↓
-Repository
-   ↓
-Service
-   ↓
-Controller
-   ↓
-Route
-   ↓
-Tests
-```
-
----
-
-# Estado del proyecto
-
-Actualmente el backend cuenta con una base funcional de:
-
-```text
-✓ FastAPI
-✓ PostgreSQL
-✓ SQLAlchemy
-✓ Configuración mediante .env
-✓ Arquitectura por capas
-✓ Usuarios
-✓ Roles
-✓ Registro
-✓ Login
-✓ Argon2
-✓ JWT
-✓ Bearer Authentication
-✓ Autorización ADMIN
-✓ Usuarios activos/inactivos
-✓ Desactivación lógica
-✓ Manejo de excepciones
-✓ Respuestas estandarizadas
-✓ Tests de integración
-✓ 103 tests pasando
-```
-
-La capa de **autenticación, JWT y autorización** se considera estable y lista para utilizarse como fundamento de los siguientes módulos funcionales del SIHS.

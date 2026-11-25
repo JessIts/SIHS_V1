@@ -1,7 +1,15 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import CheckConstraint, ForeignKey, SmallInteger, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.ficha import Ficha
+    from app.models.horario import Horario
+    from app.models.trimestre import Trimestre
+
 
 
 class FichaTrimestre(BaseModel):

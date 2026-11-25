@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch
 
 from app.models.roles import UserRole
 from scripts.create_admin import create_admin
@@ -38,7 +38,7 @@ def test_create_admin_promotes_existing_user():
         "angel@example.com",
     )
     service.promote_to_admin.assert_called_once_with(user_uuid)
-    
+
 def test_create_admin_returns_none_when_user_not_found():
     # Arrange
     db = MagicMock()
@@ -63,7 +63,7 @@ def test_create_admin_returns_none_when_user_not_found():
         "missing@example.com",
     )
     service.promote_to_admin.assert_not_called()
-    
+
 def test_create_admin_propagates_promotion_error():
     # Arrange
     db = MagicMock()
@@ -95,7 +95,7 @@ def test_create_admin_propagates_promotion_error():
         "angel@example.com",
     )
     service.promote_to_admin.assert_called_once_with(user_uuid)
-    
+
 def test_main_creates_database_session_and_promotes_user():
     # Arrange
     user = MagicMock()
@@ -124,7 +124,7 @@ def test_main_creates_database_session_and_promotes_user():
     service.promote_to_admin.assert_called_once_with(user.uuid)
 
     db.close.assert_called_once()
-    
+
 def test_main_requires_email():
     # Arrange
     with patch("sys.argv", ["create_admin"]):

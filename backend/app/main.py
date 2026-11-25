@@ -1,24 +1,24 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.exception_handlers import (
     app_exception_handler,
     conflict_exception_handler,
-    not_found_exception_handler,
-    validation_exception_handler,
-    unauthorized_exception_handler,
     forbidden_exception_handler,
+    not_found_exception_handler,
+    unauthorized_exception_handler,
+    validation_exception_handler,
 )
 from app.core.exceptions import (
     AppException,
     ConflictException,
-    NotFoundException,
-    ValidationException,
-    UnauthorizedException,
     ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+    ValidationException,
 )
 from app.routes.router import api_router
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title=settings.app_name,

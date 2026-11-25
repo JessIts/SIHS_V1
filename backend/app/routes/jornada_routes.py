@@ -15,7 +15,6 @@ from app.schemas.jornada import (
 )
 from app.services.jornada_service import JornadaService
 
-
 router = APIRouter(
     prefix="/jornadas",
     tags=["Jornadas"],

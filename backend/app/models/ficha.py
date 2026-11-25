@@ -1,10 +1,18 @@
 from datetime import date
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Column, Date, Enum as SAEnum, ForeignKey, String, Table
+from sqlalchemy import CheckConstraint, Column, Date, ForeignKey, String, Table
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, BaseModel
 from app.models.enums import EstadoFicha, ModalidadFicha, enum_values
+
+if TYPE_CHECKING:
+    from app.models.ficha_trimestre import FichaTrimestre
+    from app.models.jornada import Jornada
+    from app.models.programa import Programa
+    from app.models.user import User
 
 
 # Relación N:M aprendices <-> fichas

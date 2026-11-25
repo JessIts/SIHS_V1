@@ -15,7 +15,6 @@ from app.schemas.franja_horaria import (
 )
 from app.services.franja_horaria_service import FranjaHorariaService
 
-
 router = APIRouter(
     prefix="/franjas-horarias",
     tags=["Franjas horarias"],

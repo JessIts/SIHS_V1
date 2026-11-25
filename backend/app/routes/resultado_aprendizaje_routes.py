@@ -15,7 +15,6 @@ from app.schemas.resultado_aprendizaje import (
 )
 from app.services.resultado_aprendizaje_service import ResultadoAprendizajeService
 
-
 router = APIRouter(
     prefix="/resultados-aprendizaje",
     tags=["Resultados de aprendizaje"],

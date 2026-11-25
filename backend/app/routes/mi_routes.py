@@ -11,7 +11,6 @@ from app.schemas.horario import HorarioGrilla
 from app.schemas.mi import MiAgenda, MiFicha, MiPrograma
 from app.services.mi_service import MiService
 
-
 router = APIRouter(
     prefix="/mi",
     tags=["Mi información"],

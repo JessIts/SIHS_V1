@@ -61,7 +61,6 @@ from app.models.enums import (
 )
 from app.models.roles import UserRole
 
-
 TOTAL = 30
 
 INSTRUCTOR_PASSWORD = "Instructor123*"
@@ -125,7 +124,12 @@ NOMBRES_AMBIENTES = [
 PROGRAMAS = [
     ("Coordinación Comercio y Mercadeo", "PRG-MERC", "DESARROLLO DE PROCESOS DE MERCADEO", "TECNÓLOGO"),
     ("Coordinación Teleinformática", "PRG-ADSO", "ANÁLISIS Y DESARROLLO DE SOFTWARE", "TECNÓLOGO"),
-    ("Coordinación Gestión Contable", "PRG-CONT", "CONTABILIZACIÓN DE OPERACIONES COMERCIALES Y FINANCIERAS", "TÉCNICO"),
+    (
+        "Coordinación Gestión Contable",
+        "PRG-CONT",
+        "CONTABILIZACIÓN DE OPERACIONES COMERCIALES Y FINANCIERAS",
+        "TÉCNICO",
+    ),
     ("Coordinación Talento Humano", "PRG-GTH", "GESTIÓN DEL TALENTO HUMANO", "TECNÓLOGO"),
     ("Coordinación Logística", "PRG-LOG", "GESTIÓN LOGÍSTICA", "TECNÓLOGO"),
     ("Coordinación Telecomunicaciones", "PRG-REDES", "GESTIÓN DE REDES DE DATOS", "TECNÓLOGO"),
@@ -161,7 +165,11 @@ PROGRAMAS = [
 RESULTADOS_MERCADEO = [
     ("13", "Aplicar acciones del plan de merchandising en el canal de acuerdo con objetivos de mercadeo y normativa"),
     ("14", "Establecer el plan de acción de endomarketing de acuerdo con la identidad corporativa"),
-    ("15", "Seleccionar técnica de evaluación de estrategias para el plan de mercadeo según políticas de la organización"),
+    (
+        "15",
+        "Seleccionar técnica de evaluación de estrategias para el plan de mercadeo "
+        "según políticas de la organización",
+    ),
 ]
 
 RESULTADOS_OTROS = [
@@ -539,7 +547,10 @@ def seed(db: Session) -> None:
     #   28 y 29 -> canceladas
     # ------------------------------------------------------------------
     codigos = ["3141665"] + [str(2786540 + i * 12347) for i in range(1, TOTAL)]
-    inicios = [date(2024, 7, 15), date(2025, 1, 20), date(2025, 4, 14), date(2025, 7, 7), date(2026, 1, 19), date(2026, 4, 13)]
+    inicios = [
+        date(2024, 7, 15), date(2025, 1, 20), date(2025, 4, 14),
+        date(2025, 7, 7), date(2026, 1, 19), date(2026, 4, 13),
+    ]
 
     fichas = []
     for i, codigo in enumerate(codigos):

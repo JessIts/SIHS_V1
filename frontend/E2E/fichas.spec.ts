@@ -2,17 +2,18 @@ import { test, expect } from '@playwright/test'
 
 import {
   API_URL,
+  buscarFichasPorCodigo,
   esperarCreacionFicha,
-  iniciarSesionComoCoordinador,
+  iniciarSesionComoAdmin,
   llenarFormularioFicha,
 } from './helpers'
 
 test.describe('Registro de fichas', () => {
   let fichaUuid: string | null = null
 
-  // ARRANGE común: sesión de coordinador y formulario abierto
+  // ARRANGE común: sesión de admin (único rol que registra fichas) y formulario abierto
   test.beforeEach(async ({ page }) => {
-    await iniciarSesionComoCoordinador(page)
+    await iniciarSesionComoAdmin(page)
     await page.goto('/gestion/fichas')
     await page.getByRole('button', { name: 'Nueva ficha' }).click()
   })
@@ -25,7 +26,7 @@ test.describe('Registro de fichas', () => {
     }
   })
 
-  test('el coordinador registra una ficha nueva', async ({ page }) => {
+  test('el admin registra una ficha nueva', async ({ page }) => {
     // ==================== ARRANGE ====================
     const formulario = page.getByRole('dialog', { name: 'Nueva ficha' })
     const codigo = `E2E-${Date.now()}`
@@ -47,10 +48,12 @@ test.describe('Registro de fichas', () => {
     await expect(page.getByText('Ficha creada correctamente.')).toBeVisible()
     await expect(formulario).toBeHidden()
 
-    const fila = page.getByRole('row').filter({ hasText: codigo })
-    await expect(fila).toBeVisible()
-    await expect(fila).toContainText('TARDE')
-    await expect(fila).toContainText('Presencial')
+    // La ficha quedó guardada con los datos del formulario.
+    // Se verifica por API porque la tabla está paginada.
+    const [guardada] = await buscarFichasPorCodigo(page, codigo)
+    expect(guardada.uuid).toBe(fichaUuid)
+    expect(guardada.jornada.nombre).toBe('TARDE')
+    expect(guardada.modalidad).toBe('presencial')
   })
 
   test('no permite registrar una ficha con un código existente', async ({ page }) => {
@@ -58,9 +61,8 @@ test.describe('Registro de fichas', () => {
     const formulario = page.getByRole('dialog', { name: 'Nueva ficha' })
     const codigoExistente = '3141665' // creada por el seed
 
-    // Precondición: la ficha ya existe en la tabla
-    const filasExistentes = page.getByRole('row').filter({ hasText: codigoExistente })
-    await expect(filasExistentes).toHaveCount(1)
+    // Precondición: la ficha ya existe (por API, porque la tabla está paginada)
+    expect(await buscarFichasPorCodigo(page, codigoExistente)).toHaveLength(1)
 
     // ====================== ACT ======================
     await llenarFormularioFicha(formulario, {
@@ -84,6 +86,6 @@ test.describe('Registro de fichas', () => {
 
     // 3. No se mostró éxito ni se duplicó la ficha
     await expect(page.getByText('Ficha creada correctamente.')).toBeHidden()
-    await expect(filasExistentes).toHaveCount(1)
+    expect(await buscarFichasPorCodigo(page, codigoExistente)).toHaveLength(1)
   })
-})
+})

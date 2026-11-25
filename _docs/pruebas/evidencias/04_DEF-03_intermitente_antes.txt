@@ -1,0 +1,11 @@
+Versión anterior de test_horarios_routes.py: 10 ejecuciones de la suite completa
+Ejecución 1: 129 passed, 345 warnings in 7.11s
+Ejecución 2: 129 passed, 345 warnings in 7.29s
+Ejecución 3: 127 passed, 314 warnings, 2 errors in 6.50s
+Ejecución 4: 129 passed, 345 warnings in 7.87s
+Ejecución 5: 128 passed, 335 warnings, 1 error in 7.10s
+Ejecución 6: 129 passed, 345 warnings in 7.14s
+Ejecución 7: 128 passed, 321 warnings, 1 error in 7.09s
+Ejecución 8: 129 passed, 345 warnings in 7.57s
+Ejecución 9: 127 passed, 328 warnings, 2 errors in 7.42s
+Ejecución 10: 129 passed, 345 warnings in 7.86s

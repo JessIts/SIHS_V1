@@ -15,7 +15,6 @@ from app.schemas.competencia import (
 )
 from app.services.competencia_service import CompetenciaService
 
-
 router = APIRouter(
     prefix="/competencias",
     tags=["Competencias"],

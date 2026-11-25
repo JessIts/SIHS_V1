@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
 from app.models.roles import UserRole
 from app.models.user import User
 
@@ -38,8 +39,10 @@ class UserRepository:
         email: str,
     ) -> User | None:
 
+        # Sin distinguir mayúsculas: también encuentra cuentas antiguas
+        # guardadas con otra escritura del mismo correo
         statement = select(User).where(
-            User.email == email
+            func.lower(User.email) == email.strip().lower()
         )
 
         return self.db.scalar(statement)

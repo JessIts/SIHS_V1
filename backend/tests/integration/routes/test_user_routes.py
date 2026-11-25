@@ -1,15 +1,18 @@
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+
+import jwt
+
+from app.core.config import settings
 from app.models.roles import UserRole
 from app.models.user import User
-from uuid import uuid4
 from app.schemas.user import UserUpdate
-from datetime import datetime, timedelta, timezone
-import jwt
-from app.core.config import settings
 
-def test_create_user_success(client):
+
+def test_register_user_success(client):
 
     response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Test",
             "email": "test@example.com",
@@ -25,12 +28,44 @@ def test_create_user_success(client):
 
     assert data["data"]["role"] == "user"
 
+
+def test_create_user_requires_admin(client):
+    # Crear usuarios por /users es exclusivo del admin; el registro público es /auth/register
+    response = client.post(
+        "/api/v1/users",
+        json={
+            "name": "Usuario Test",
+            "email": f"sin-token-{uuid4()}@example.com",
+            "phone": "3001234567",
+            "document_number": f"ST-{str(uuid4())[:8]}",
+            "password": "Password123!",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_admin_can_create_user(client, admin_token):
+    response = client.post(
+        "/api/v1/users",
+        headers={"Cookie": f"access_token={admin_token}"},
+        json={
+            "name": "Usuario Creado por Admin",
+            "email": f"por-admin-{uuid4()}@example.com",
+            "phone": "3001234567",
+            "document_number": f"PA-{str(uuid4())[:8]}",
+            "password": "Password123!",
+        },
+    )
+
+    assert response.status_code == 201, response.json()
+
 def test_get_user_with_invalid_token(client):
     email = f"token-{uuid4()}@example.com"
     document_number = f"TOKEN-{str(uuid4())[:8]}"
 
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Token",
             "email": email,
@@ -47,15 +82,15 @@ def test_get_user_with_invalid_token(client):
     response = client.get(
         f"/api/v1/users/{user_uuid}",
         headers={
-            "Authorization": "Bearer token-invalido",
+            "Cookie": "access_token=token-invalido",
         },
     )
 
     assert response.status_code == 401
-    
+
 def test_get_my_profile_with_valid_token(client):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Autenticado",
             "email": "authenticated@example.com",
@@ -79,12 +114,12 @@ def test_get_my_profile_with_valid_token(client):
 
     assert login_response.status_code == 200
 
-    access_token = login_response.json()["data"]["access_token"]
+    access_token = login_response.cookies["access_token"]
 
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {access_token}",
+            "Cookie": f"access_token={access_token}",
         },
     )
 
@@ -94,10 +129,10 @@ def test_get_my_profile_with_valid_token(client):
 
     assert data["data"]["uuid"] == user_uuid
     assert data["data"]["email"] == "authenticated@example.com"
-  
+
 def test_get_inactive_users_forbidden_for_regular_user(client):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Normal",
             "email": "normal@example.com",
@@ -119,12 +154,12 @@ def test_get_inactive_users_forbidden_for_regular_user(client):
 
     assert login_response.status_code == 200
 
-    access_token = login_response.json()["data"]["access_token"]
+    access_token = login_response.cookies["access_token"]
 
     response = client.get(
         "/api/v1/users/inactive",
         headers={
-            "Authorization": f"Bearer {access_token}",
+            "Cookie": f"access_token={access_token}",
         },
     )
 
@@ -134,10 +169,10 @@ def test_get_inactive_users_forbidden_for_regular_user(client):
 
     assert data["success"] is False
     assert data["message"] == "Permisos insuficientes."
-    
+
 def test_get_inactive_users_allowed_for_admin(client, db):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Administrador Test",
             "email": "admin@example.com",
@@ -168,17 +203,17 @@ def test_get_inactive_users_allowed_for_admin(client, db):
 
     assert login_response.status_code == 200
 
-    access_token = login_response.json()["data"]["access_token"]
+    access_token = login_response.cookies["access_token"]
 
     response = client.get(
         "/api/v1/users/inactive",
         headers={
-            "Authorization": f"Bearer {access_token}",
+            "Cookie": f"access_token={access_token}",
         },
     )
 
     assert response.status_code == 200
-    
+
 def test_get_my_profile_without_token(client):
     response = client.get(
         "/api/v1/users/me",
@@ -188,13 +223,15 @@ def test_get_my_profile_without_token(client):
 
     data = response.json()
 
-    assert "detail" in data
+    # Los errores usan el formato estándar de la API
+    assert data["success"] is False
+    assert data["message"] == "No autenticado."
 
 def test_user_can_get_my_profile(client, user, user_token):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -210,7 +247,7 @@ def test_admin_can_get_my_profile(client, admin_user, admin_token):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -233,7 +270,7 @@ def test_user_cannot_list_users(client, user_token):
     response = client.get(
         "/api/v1/users",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -248,7 +285,7 @@ def test_admin_can_list_users(client, admin_token):
     response = client.get(
         "/api/v1/users",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -270,7 +307,7 @@ def test_user_cannot_get_user_by_uuid(client, user, user_token):
     response = client.get(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -285,7 +322,7 @@ def test_admin_can_get_user_by_uuid(client, user, admin_token):
     response = client.get(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -308,7 +345,7 @@ def test_user_cannot_get_inactive_users(client, user_token):
     response = client.get(
         "/api/v1/users/inactive",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -321,7 +358,7 @@ def test_user_cannot_get_inactive_users(client, user_token):
 
 def test_admin_can_get_inactive_users(client, db, admin_token):
     create_response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Inactivo",
             "email": f"inactive-test-{uuid4()}@example.com",
@@ -349,7 +386,7 @@ def test_admin_can_get_inactive_users(client, db, admin_token):
     response = client.get(
         "/api/v1/users/inactive",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -377,7 +414,7 @@ def test_user_cannot_activate_user(client, user, user_token):
     response = client.patch(
         f"/api/v1/users/{user['uuid']}/activate",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -403,7 +440,7 @@ def test_admin_can_activate_user(client, db, user, admin_token):
     response = client.patch(
         f"/api/v1/users/{user['uuid']}/activate",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -433,7 +470,7 @@ def test_user_cannot_update_user(client, user, user_token):
     response = client.put(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
         json={
             "name": "Nombre No Permitido",
@@ -451,7 +488,7 @@ def test_admin_can_update_user(client, user, admin_token):
     response = client.put(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
         json={
             "name": "Nombre Actualizado",
@@ -477,7 +514,7 @@ def test_user_cannot_delete_user(client, user, user_token):
     response = client.delete(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {user_token}",
+            "Cookie": f"access_token={user_token}",
         },
     )
 
@@ -492,7 +529,7 @@ def test_admin_can_delete_user(client, db, user, admin_token):
     response = client.delete(
         f"/api/v1/users/{user['uuid']}",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
@@ -512,7 +549,7 @@ def test_admin_role_cannot_be_changed_by_update(client, db, admin_user, admin_to
     response = client.put(
         f"/api/v1/users/{admin_user.uuid}",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
         json={
             "name": "Administrador Modificado",
@@ -542,97 +579,97 @@ def test_inactive_admin_cannot_access_with_existing_token(
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {admin_token}",
+            "Cookie": f"access_token={admin_token}",
         },
     )
 
     assert response.status_code == 401
 
-def test_get_my_profile_with_expired_token(client): 
-    expired_token = jwt.encode( 
-        { 
-            "sub": "00000000-0000-0000-0000-000000000001", 
-            "exp": datetime.now(timezone.utc) - timedelta(minutes=1), 
-        }, 
-        settings.jwt_secret_key, 
-        algorithm=settings.jwt_algorithm, 
-    ) 
-    response = client.get( 
-        "/api/v1/users/me", 
-        headers={ 
-            "Authorization": f"Bearer {expired_token}", 
-        }, ) 
-    
-    assert response.status_code == 401 
+def test_get_my_profile_with_expired_token(client):
+    expired_token = jwt.encode(
+        {
+            "sub": "00000000-0000-0000-0000-000000000001",
+            "exp": datetime.now(UTC) - timedelta(minutes=1),
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+    response = client.get(
+        "/api/v1/users/me",
+        headers={
+            "Cookie": f"access_token={expired_token}",
+        }, )
 
-def test_get_my_profile_with_invalid_signature(client): 
-    
-    invalid_token = jwt.encode( 
-        { 
-            "sub": "00000000-0000-0000-0000-000000000001", 
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5), 
-        }, 
-        "wrong-secret-key", 
-        algorithm=settings.jwt_algorithm, 
-    ) 
-    response = client.get( "/api/v1/users/me", 
-    headers={ 
-            "Authorization": f"Bearer {invalid_token}", 
-            }, 
-    ) 
-    assert response.status_code == 401 
-    
-def test_get_my_profile_with_malformed_token(client): 
-    response = client.get( 
-        "/api/v1/users/me", 
-        headers={ 
-            "Authorization": "Bearer token-completamente-invalido", 
-        }, 
-    ) 
-    assert response.status_code == 401 
-    
-def test_get_my_profile_with_invalid_uuid_subject(client): 
-    invalid_token = jwt.encode( 
-        { 
-            "sub": "esto-no-es-un-uuid", 
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5), 
-        }, 
-        settings.jwt_secret_key, 
-        algorithm=settings.jwt_algorithm, 
-    ) 
-    response = client.get( 
-        "/api/v1/users/me", 
-        headers={ 
-            "Authorization": f"Bearer {invalid_token}", 
-        }, 
-    ) 
-    
-    assert response.status_code == 401 
-    
-def test_get_my_profile_without_subject(client): 
-    invalid_token = jwt.encode( 
-        { 
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5), 
-        }, 
-        
-        settings.jwt_secret_key, 
-        algorithm=settings.jwt_algorithm, 
-    ) 
-    
-    response = client.get( 
-        "/api/v1/users/me", 
-        headers={ 
-            "Authorization": f"Bearer {invalid_token}", 
-        }, 
-    ) 
-    
     assert response.status_code == 401
-    
+
+def test_get_my_profile_with_invalid_signature(client):
+
+    invalid_token = jwt.encode(
+        {
+            "sub": "00000000-0000-0000-0000-000000000001",
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
+        },
+        "wrong-secret-key",
+        algorithm=settings.jwt_algorithm,
+    )
+    response = client.get( "/api/v1/users/me",
+    headers={
+            "Cookie": f"access_token={invalid_token}",
+            },
+    )
+    assert response.status_code == 401
+
+def test_get_my_profile_with_malformed_token(client):
+    response = client.get(
+        "/api/v1/users/me",
+        headers={
+            "Cookie": "access_token=token-completamente-invalido",
+        },
+    )
+    assert response.status_code == 401
+
+def test_get_my_profile_with_invalid_uuid_subject(client):
+    invalid_token = jwt.encode(
+        {
+            "sub": "esto-no-es-un-uuid",
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+    response = client.get(
+        "/api/v1/users/me",
+        headers={
+            "Cookie": f"access_token={invalid_token}",
+        },
+    )
+
+    assert response.status_code == 401
+
+def test_get_my_profile_without_subject(client):
+    invalid_token = jwt.encode(
+        {
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
+        },
+
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+    response = client.get(
+        "/api/v1/users/me",
+        headers={
+            "Cookie": f"access_token={invalid_token}",
+        },
+    )
+
+    assert response.status_code == 401
+
 def test_get_my_profile_with_wrong_jwt_algorithm(client):
     token = jwt.encode(
         {
             "sub": "00000000-0000-0000-0000-000000000001",
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
         },
         settings.jwt_secret_key,
         algorithm="HS384",
@@ -641,7 +678,7 @@ def test_get_my_profile_with_wrong_jwt_algorithm(client):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {token}",
+            "Cookie": f"access_token={token}",
         },
     )
 
@@ -650,7 +687,7 @@ def test_get_my_profile_with_wrong_jwt_algorithm(client):
 def test_get_my_profile_with_none_algorithm(client):
     payload = {
         "sub": "00000000-0000-0000-0000-000000000001",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
     }
 
     token = jwt.encode(
@@ -662,7 +699,7 @@ def test_get_my_profile_with_none_algorithm(client):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {token}",
+            "Cookie": f"access_token={token}",
         },
     )
 
@@ -672,7 +709,7 @@ def test_get_my_profile_with_bearer_without_token(client):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": "Bearer",
+            "Cookie": "access_token=",
         },
     )
 
@@ -682,7 +719,7 @@ def test_get_my_profile_with_empty_bearer_token(client):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": "Bearer ",
+            "Cookie": "access_token=",
         },
     )
 
@@ -694,7 +731,7 @@ def test_get_my_profile_with_token_from_another_user(client, user):
     token = jwt.encode(
         {
             "sub": other_user_uuid,
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
         },
         settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
@@ -703,7 +740,7 @@ def test_get_my_profile_with_token_from_another_user(client, user):
     response = client.get(
         "/api/v1/users/me",
         headers={
-            "Authorization": f"Bearer {token}",
+            "Cookie": f"access_token={token}",
         },
     )
 

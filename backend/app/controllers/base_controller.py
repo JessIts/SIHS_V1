@@ -5,7 +5,6 @@ from pydantic import BaseModel as PydanticModel
 
 from app.services.base_service import BaseService
 
-
 ServiceT = TypeVar("ServiceT", bound=BaseService)
 
 
