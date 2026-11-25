@@ -1,20 +1,18 @@
 from uuid import UUID
 
 import jwt
-
 from fastapi import Cookie, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.scope import UNRESTRICTED, AccessScope
 from app.core.exceptions import (
     ForbiddenException,
     UnauthorizedException,
 )
+from app.core.scope import UNRESTRICTED, AccessScope
 from app.core.security import decode_access_token
 from app.models.roles import UserRole
 from app.repositories.user_repository import UserRepository
-
 
 ACCESS_TOKEN_COOKIE = "access_token"
 
@@ -44,10 +42,10 @@ def get_current_user(
         jwt.InvalidTokenError,
         KeyError,
         ValueError,
-    ):
+    ) as error:
         raise UnauthorizedException(
             "Token inválido."
-        )
+        ) from error
 
     repository = UserRepository(db)
 

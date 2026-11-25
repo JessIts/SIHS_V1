@@ -3,7 +3,7 @@ Recuperación de contraseña: solicitar enlace -> validar -> cambiar contraseña
 El envío de correo se reemplaza por una lista para leer el enlace.
 """
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -13,7 +13,6 @@ from app.core.security import hash_password
 from app.models.password_reset_token import PasswordResetToken
 from app.models.roles import UserRole
 from app.models.user import User
-
 
 API = "/api/v1"
 PASSWORD = "Password123!"
@@ -121,7 +120,7 @@ def test_token_invalido_o_vencido(client, db, usuario, outbox):
 
     # Se vence el enlace
     reset = db.query(PasswordResetToken).filter(PasswordResetToken.user_id == usuario.id).one()
-    reset.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    reset.expires_at = datetime.now(UTC) - timedelta(minutes=1)
     db.commit()
 
     r = client.post(f"{API}/auth/password/reset", json={"token": token, "password": NEW_PASSWORD})
@@ -139,7 +138,7 @@ def test_solo_el_ultimo_enlace_sirve_y_no_se_reenvia_de_inmediato(client, db, us
 
     # Pasado el tiempo de espera sí se envía uno nuevo...
     pendiente = db.query(PasswordResetToken).filter(PasswordResetToken.user_id == usuario.id).one()
-    pendiente.created_at = datetime.now(timezone.utc) - timedelta(minutes=2)
+    pendiente.created_at = datetime.now(UTC) - timedelta(minutes=2)
     db.commit()
 
     _forgot(client, usuario.email)

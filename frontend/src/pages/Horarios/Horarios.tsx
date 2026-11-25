@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import PageHeader from '../../components/common/PageHeader/PageHeader'
@@ -62,7 +62,10 @@ function Horarios() {
   const [grilla, setGrilla] = useState<HorarioGrilla | null>(null)
   const [catalogos, setCatalogos] = useState<Catalogos>(EMPTY_CATALOGOS)
 
-  const [loading, setLoading] = useState(true)
+  // "Cargando" se deriva (ver más abajo) en lugar de activarse con
+  // setState dentro de un efecto, que provoca renders en cascada.
+  const [programacionesCargadas, setProgramacionesCargadas] = useState(false)
+  const [grillaCargadaPara, setGrillaCargadaPara] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -78,15 +81,14 @@ function Horarios() {
 
         if (active) {
           setProgramaciones(items)
-
-          if (items.length === 0) {
-            setLoading(false)
-          }
         }
       } catch (loadError) {
         if (active) {
           setError(errorMessage(loadError, 'No fue posible cargar las fichas programadas.'))
-          setLoading(false)
+        }
+      } finally {
+        if (active) {
+          setProgramacionesCargadas(true)
         }
       }
     }
@@ -110,28 +112,54 @@ function Horarios() {
     [programaciones, selected],
   )
 
-  // 2) Grilla de la programación seleccionada
-  const loadGrilla = useCallback(async () => {
+  // 2) Grilla de la programación seleccionada.
+  //    El estado solo cambia cuando llega la respuesta (nunca de forma
+  //    síncrona dentro del efecto).
+  useEffect(() => {
     if (!selected) {
       return
     }
 
-    try {
-      setLoading(true)
-      setError('')
+    let active = true
 
-      setGrilla(await getGrillaHorario(selected))
-    } catch (loadError) {
-      setGrilla(null)
-      setError(errorMessage(loadError, 'No fue posible cargar el horario.'))
-    } finally {
-      setLoading(false)
+    getGrillaHorario(selected)
+      .then((data) => {
+        if (active) {
+          setGrilla(data)
+          setError('')
+        }
+      })
+      .catch((loadError) => {
+        if (active) {
+          setGrilla(null)
+          setError(errorMessage(loadError, 'No fue posible cargar el horario.'))
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setGrillaCargadaPara(selected)
+        }
+      })
+
+    return () => {
+      active = false
     }
   }, [selected])
 
-  useEffect(() => {
-    void loadGrilla()
-  }, [loadGrilla])
+  // Cargando = aún no llegan las programaciones, o la grilla que hay en
+  // pantalla no corresponde a la programación seleccionada.
+  const loading = !programacionesCargadas
+    || (selected !== '' && grillaCargadaPara !== selected)
+
+  // Vuelve a pedir la grilla después de crear, editar o eliminar una clase.
+  // Se llama desde eventos (no desde un efecto), así que puede cambiar el estado.
+  async function recargarGrilla() {
+    try {
+      setGrilla(await getGrillaHorario(selected))
+    } catch (loadError) {
+      setError(errorMessage(loadError, 'No fue posible actualizar el horario.'))
+    }
+  }
 
   // 3) Opciones del formulario: temáticas del programa de la ficha,
   //    instructores y ambientes (se cargan una vez por ficha)
@@ -277,7 +305,7 @@ function Horarios() {
     }
 
     setEditor(null)
-    await loadGrilla()
+    await recargarGrilla()
   }
 
   async function handleDelete() {
@@ -289,7 +317,7 @@ function Horarios() {
 
     setEditor(null)
     setNotice('Clase eliminada. La casilla quedó libre.')
-    await loadGrilla()
+    await recargarGrilla()
   }
 
   return (

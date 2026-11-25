@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -10,7 +10,6 @@ from app.core.security import generate_reset_token, hash_password, hash_reset_to
 from app.models.password_reset_token import PasswordResetToken
 from app.repositories.password_reset_repository import PasswordResetRepository
 from app.repositories.user_repository import UserRepository
-
 
 INVALID_TOKEN_MESSAGE = (
     "El enlace de recuperación no es válido o ya expiró. Solicita uno nuevo."
@@ -47,7 +46,7 @@ class PasswordResetService:
 
     @staticmethod
     def _now() -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     # ------------------------------------------------------------------
     # 1. Solicitar el enlace
@@ -123,9 +122,9 @@ class PasswordResetService:
     def _commit(self, message: str) -> None:
         try:
             self.db.commit()
-        except IntegrityError:
+        except IntegrityError as error:
             self.db.rollback()
-            raise ConflictException(message)
+            raise ConflictException(message) from error
 
     @staticmethod
     def _build_email(name: str, email: str, link: str) -> PasswordResetEmail:

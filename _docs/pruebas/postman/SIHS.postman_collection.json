@@ -1,0 +1,1276 @@
+{
+  "info": {
+    "_postman_id": "1e1d5356-c768-40ea-9dc3-97f2c264a9f4",
+    "name": "SIHS API - Pruebas",
+    "description": "Pruebas de API de SIHS con tests automáticos.\n\nRequisitos: backend corriendo, `alembic upgrade head` y `python -m scripts.seed_horarios` (crea el coordinador y la aprendiz que usa la colección).\n\nEjecutar en orden con el Collection Runner: la sesión viaja en la cookie httponly `access_token`, que Postman guarda sola.\n\nLa carpeta 7 (admin) es opcional: llena admin_email y admin_password en el entorno.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Autenticación",
+      "item": [
+        {
+          "name": "1.1 Login con contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{coordinador_email}}\",\n  \"password\": \"ClaveEquivocada1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));",
+                  "",
+                  "pm.test(\"Usa el formato de error de la API\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\");",
+                  "});",
+                  "",
+                  "pm.test(\"No revela si el correo existe\", () => {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Credenciales inválidas.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Login con correo mal formado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-es-un-correo\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Login coordinador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{coordinador_email}}\",\n  \"password\": \"{{coordinador_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Entrega la sesión en una cookie, no en el cuerpo\", () => {",
+                  "    pm.expect(pm.cookies.has(\"access_token\")).to.be.true;",
+                  "    pm.expect(pm.response.json().data).to.not.have.property(\"access_token\");",
+                  "});",
+                  "pm.test(\"La cookie es httponly\", () => {",
+                  "    const setCookie = pm.response.headers.get(\"Set-Cookie\") || \"\";",
+                  "    pm.expect(setCookie.toLowerCase()).to.include(\"httponly\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Mi perfil (coordinador)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Es coordinador y tiene coordinación asignada\", () => {",
+                  "    const user = pm.response.json().data;",
+                  "    pm.expect(user.role).to.eql(\"coordinador\");",
+                  "    pm.expect(user.coordinacion).to.not.be.null;",
+                  "    pm.collectionVariables.set(\"mi_coordinacion\", user.coordinacion.nombre);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Coordinador: solo programa horarios",
+      "item": [
+        {
+          "name": "2.1 Crear sede (prohibido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sedes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sedes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sede Postman\",\n  \"direccion\": \"Calle 1 # 2-3\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El coordinador no registra sedes (403)\", () => pm.response.to.have.status(403));",
+                  "",
+                  "pm.test(\"Usa el formato de error de la API\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Crear ambiente (prohibido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ambientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ambientes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sede_uuid\": \"00000000-0000-0000-0000-000000000000\",\n  \"nombre\": \"Aula Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El coordinador no registra ambientes (403)\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Listar mis ambientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ambientes?limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ambientes"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Solo ve ambientes de su coordinación\", () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    const mia = pm.collectionVariables.get(\"mi_coordinacion\");",
+                  "    pm.expect(items.length).to.be.above(0);",
+                  "    items.forEach((a) => pm.expect(a.coordinacion.nombre).to.eql(mia));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Buscar la ficha 3141665",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fichas?codigo=3141665",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "fichas"
+              ],
+              "query": [
+                {
+                  "key": "codigo",
+                  "value": "3141665"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La ficha pertenece a su coordinación y existe\", () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    pm.expect(items).to.have.lengthOf(1);",
+                  "    pm.collectionVariables.set(\"ficha_uuid\", items[0].uuid);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Programación de la ficha en el trimestre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fichas-trimestre?ficha_uuid={{ficha_uuid}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "fichas-trimestre"
+              ],
+              "query": [
+                {
+                  "key": "ficha_uuid",
+                  "value": "{{ficha_uuid}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Tiene al menos una programación\", () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    pm.expect(items.length).to.be.above(0);",
+                  "    pm.collectionVariables.set(\"ficha_trimestre_uuid\", items[0].uuid);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 Grilla del horario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/horarios/grilla/{{ficha_trimestre_uuid}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "horarios",
+                "grilla",
+                "{{ficha_trimestre_uuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La grilla trae encabezado, días y jornadas\", () => {",
+                  "    const grilla = pm.response.json().data;",
+                  "    pm.expect(grilla.encabezado.ficha).to.eql(\"3141665\");",
+                  "    pm.expect(grilla.dias.length).to.be.above(0);",
+                  "    pm.expect(grilla.jornadas.length).to.be.above(0);",
+                  "});",
+                  "pm.test(\"Responde en menos de 1 segundo\", () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 Crear casilla sin datos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Valida los campos obligatorios (422)\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.8 Listar usuarios (solo ve instructores)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?role=admin&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "admin"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Aunque pida admins, solo recibe instructores\", () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    items.forEach((u) => pm.expect(u.role).to.eql(\"instructor\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Cerrar sesión",
+      "item": [
+        {
+          "name": "3.1 Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Mi perfil sin sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));",
+                  "",
+                  "pm.test(\"Usa el formato de error de la API\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mensaje de no autenticado\", () => pm.expect(pm.response.json().message).to.eql(\"No autenticado.\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Aprendiz: solo consulta",
+      "item": [
+        {
+          "name": "4.1 Login aprendiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aprendiz_email}}\",\n  \"password\": \"{{aprendiz_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Mis fichas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mi/fichas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mi",
+                "fichas"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Ve su ficha 3141665 con su programación\", () => {",
+                  "    const fichas = pm.response.json().data;",
+                  "    const ficha = fichas.find((f) => f.codigo === \"3141665\");",
+                  "    pm.expect(ficha, \"ficha 3141665\").to.exist;",
+                  "    pm.expect(ficha.programaciones.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Catálogo de sedes (prohibido)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sedes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sedes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El aprendiz no consulta catálogos de gestión (403)\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Dashboard de gestión (prohibido)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboard/resumen",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dashboard",
+                "resumen"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Registro público",
+      "item": [
+        {
+          "name": "5.1 Registro nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario Postman\",\n  \"email\": \"{{registro_email}}\",\n  \"phone\": \"3001234567\",\n  \"document_number\": \"{{registro_documento}}\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sufijo = Date.now().toString(36);",
+                  "pm.collectionVariables.set(\"registro_email\", `Postman.${sufijo}@Example.com`);",
+                  "pm.collectionVariables.set(\"registro_documento\", `PM-${sufijo}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test(\"Queda con rol user y el correo en minúsculas\", () => {",
+                  "    const user = pm.response.json().data;",
+                  "    pm.expect(user.role).to.eql(\"user\");",
+                  "    pm.expect(user.email).to.eql(pm.collectionVariables.get(\"registro_email\").toLowerCase());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Registro con el mismo correo en MAYÚSCULAS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario Postman\",\n  \"email\": \"{{registro_email_mayus}}\",\n  \"phone\": \"3001234567\",\n  \"document_number\": \"{{registro_documento}}-2\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Verifica la corrección del defecto de correos que distinguían mayúsculas."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"registro_email_mayus\", pm.collectionVariables.get(\"registro_email\").toUpperCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"No permite duplicar la cuenta cambiando mayúsculas (409)\", () => pm.response.to.have.status(409));",
+                  "",
+                  "pm.test(\"Usa el formato de error de la API\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Registro con contraseña corta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario Postman\",\n  \"email\": \"corta@example.com\",\n  \"phone\": \"3001234567\",\n  \"document_number\": \"PM-CORTA\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Recuperación de contraseña",
+      "item": [
+        {
+          "name": "6.1 Solicitar enlace con correo inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/password/forgot",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password",
+                "forgot"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nadie.registrado@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Respuesta genérica: no revela si el correo existe\", () => {",
+                  "    pm.expect(pm.response.json().message).to.include(\"Si el correo está registrado\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Validar un enlace inválido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/password/reset/validate?token=token-que-no-existe-0000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password",
+                "reset",
+                "validate"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "token-que-no-existe-0000000000000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));",
+                  "",
+                  "pm.test(\"Usa el formato de error de la API\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Restablecer con contraseña corta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/password/reset",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password",
+                "reset"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token-que-no-existe-0000000000000\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Administrador (opcional)",
+      "item": [
+        {
+          "name": "7.1 Login admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"admin_email\")) {",
+                  "    console.log(\"Sin admin_email en el entorno: se omite la carpeta 7.\");",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.2 Crear sede",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sedes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sedes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sede Postman {{$timestamp}}\",\n  \"direccion\": \"Calle 1 # 2-3\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"admin_email\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.collectionVariables.set(\"sede_uuid\", pm.response.json().data.uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.3 Eliminar la sede creada",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sedes/{{sede_uuid}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sedes",
+                "{{sede_uuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"admin_email\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.4 Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"admin_email\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "mi_coordinacion",
+      "value": ""
+    },
+    {
+      "key": "ficha_uuid",
+      "value": ""
+    },
+    {
+      "key": "ficha_trimestre_uuid",
+      "value": ""
+    },
+    {
+      "key": "registro_email",
+      "value": ""
+    },
+    {
+      "key": "registro_email_mayus",
+      "value": ""
+    },
+    {
+      "key": "registro_documento",
+      "value": ""
+    },
+    {
+      "key": "sede_uuid",
+      "value": ""
+    }
+  ]
+}

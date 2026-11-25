@@ -1,10 +1,16 @@
 from datetime import date
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Date, Enum as SAEnum, SmallInteger, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, SmallInteger, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
 from app.models.enums import EstadoTrimestre, enum_values
+
+if TYPE_CHECKING:
+    from app.models.ficha_trimestre import FichaTrimestre
+
 
 
 class Trimestre(BaseModel):

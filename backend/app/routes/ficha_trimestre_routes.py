@@ -16,7 +16,6 @@ from app.schemas.ficha_trimestre import (
 )
 from app.services.ficha_trimestre_service import FichaTrimestreService
 
-
 router = APIRouter(
     prefix="/fichas-trimestre",
     tags=["Fichas por trimestre"],

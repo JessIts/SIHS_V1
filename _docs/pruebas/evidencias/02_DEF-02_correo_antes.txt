@@ -1,0 +1,17 @@
+E       AssertionError: assert 'Ana.Prueba.8...b@example.com' == 'ana.prueba.8...b@example.com'
+E         
+E         - ana.prueba.8ba52b@example.com
+E         ? ^   ^
+E         + Ana.Prueba.8ba52b@example.com
+E         ? ^   ^
+E       assert 201 == 409
+E        +  where 201 = <Response [201 Created]>.status_code
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+E       assert 0 == 1
+E        +  where 0 = len([])
+FAILED tests/integration/routes/test_email_normalization.py::test_el_correo_se_guarda_en_minusculas
+FAILED tests/integration/routes/test_email_normalization.py::test_no_permite_duplicar_correo_cambiando_mayusculas
+FAILED tests/integration/routes/test_email_normalization.py::test_login_sin_importar_mayusculas
+FAILED tests/integration/routes/test_email_normalization.py::test_recuperacion_sin_importar_mayusculas
+4 failed in 0.53s

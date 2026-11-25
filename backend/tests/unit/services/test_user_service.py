@@ -1,23 +1,23 @@
-import pytest
-
 from unittest.mock import MagicMock
 from uuid import uuid4
-from app.models.roles import UserRole
+
+import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app.core.exceptions import (
     ConflictException,
     NotFoundException,
-    )
+)
 from app.core.security import (
     hash_password,
     verify_password,
-    )
+)
+from app.models.roles import UserRole
 from app.schemas.user import (
     UserCreate,
     UserUpdate,
-    )
+)
 from app.services.user_service import UserService
-from sqlalchemy.exc import IntegrityError
 
 
 def test_create_user_success():
@@ -562,7 +562,7 @@ def test_get_users_empty():
         limit=10,
         include_inactive=False,
     )
-    
+
 def test_promote_user_to_admin_success():
     # Arrange
     db = MagicMock()
@@ -592,7 +592,7 @@ def test_promote_user_to_admin_success():
     )
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(user)
-    
+
 def test_promote_user_to_admin_not_found():
     # Arrange
     db = MagicMock()
@@ -615,7 +615,7 @@ def test_promote_user_to_admin_not_found():
     )
     db.commit.assert_not_called()
     db.refresh.assert_not_called()
-    
+
 def test_promote_user_to_admin_when_already_admin():
     # Arrange
     db = MagicMock()
@@ -645,7 +645,7 @@ def test_promote_user_to_admin_when_already_admin():
     )
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(user)
-    
+
 def test_promote_inactive_user_to_admin_success():
     # Arrange
     db = MagicMock()
@@ -676,7 +676,7 @@ def test_promote_inactive_user_to_admin_success():
     )
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(user)
-    
+
 def test_promote_user_to_admin_integrity_error():
     # Arrange
     db = MagicMock()

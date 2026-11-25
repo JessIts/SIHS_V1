@@ -15,7 +15,6 @@ from app.schemas.trimestre import (
 )
 from app.services.trimestre_service import TrimestreService
 
-
 router = APIRouter(
     prefix="/trimestres",
     tags=["Trimestres"],

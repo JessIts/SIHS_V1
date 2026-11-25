@@ -1,15 +1,29 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     CheckConstraint,
-    Enum as SAEnum,
     ForeignKey,
     ForeignKeyConstraint,
     String,
     UniqueConstraint,
 )
+from sqlalchemy import (
+    Enum as SAEnum,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
 from app.models.enums import ModalidadClase, enum_values
+
+if TYPE_CHECKING:
+    from app.models.ambiente import Ambiente
+    from app.models.dia_semana import DiaSemana
+    from app.models.ficha_trimestre import FichaTrimestre
+    from app.models.franja_horaria import FranjaHoraria
+    from app.models.resultado_aprendizaje import ResultadoAprendizaje
+    from app.models.trimestre import Trimestre
+    from app.models.user import User
+
 
 
 class Horario(BaseModel):

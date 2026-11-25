@@ -15,7 +15,6 @@ from app.schemas.programa import (
 )
 from app.services.programa_service import ProgramaService
 
-
 router = APIRouter(
     prefix="/programas",
     tags=["Programas"],

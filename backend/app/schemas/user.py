@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.roles import UserRole
 from app.schemas.briefs import CoordinacionBrief
+from app.schemas.types import NormalizedEmail
 
 
 class UserCreate(BaseModel):
@@ -12,7 +13,7 @@ class UserCreate(BaseModel):
         min_length=2,
         max_length=100,
     )
-    email: EmailStr
+    email: NormalizedEmail
     phone: str = Field(
         min_length=7,
         max_length=20,
@@ -33,7 +34,7 @@ class UserUpdate(BaseModel):
         min_length=2,
         max_length=100,
     )
-    email: EmailStr | None = None
+    email: NormalizedEmail | None = None
     phone: str | None = Field(
         default=None,
         min_length=7,
@@ -49,7 +50,7 @@ class UserUpdate(BaseModel):
         min_length=8,
         max_length=128,
     )
-    
+
 class UserProfileUpdate(BaseModel):
     name: str | None = Field(
         default=None,
@@ -57,7 +58,7 @@ class UserProfileUpdate(BaseModel):
         max_length=100,
     )
 
-    email: EmailStr | None = None
+    email: NormalizedEmail | None = None
 
     phone: str | None = Field(
         default=None,
@@ -76,7 +77,7 @@ class UserProfileUpdate(BaseModel):
         min_length=8,
         max_length=128,
     )
-    
+
 
 class UserRoleUpdate(BaseModel):
     role: UserRole
@@ -92,7 +93,7 @@ class UserRoleUpdate(BaseModel):
 class UserResponse(BaseModel):
     uuid: UUID
     name: str
-    email: EmailStr
+    email: str
     phone: str
     document_number: str
     role: UserRole
@@ -110,4 +111,4 @@ class UserPagination(BaseModel):
     page: int
     limit: int
     total: int
-    pages: int
+    pages: int

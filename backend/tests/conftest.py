@@ -2,9 +2,7 @@ import os
 from uuid import uuid4
 
 import pytest
-
 from fastapi.testclient import TestClient
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -13,7 +11,6 @@ from app.main import app
 from app.models.base import Base
 from app.models.roles import UserRole
 from app.models.user import User
-
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
@@ -73,7 +70,7 @@ def user(client):
     email = f"user-{uuid4()}@example.com"
 
     response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Usuario Test",
             "email": email,
@@ -100,7 +97,12 @@ def user_token(client, user):
 
     assert response.status_code == 200
 
-    return response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
+
+    # Cada prueba envía su cookie explícitamente: se limpia la del cliente
+    client.cookies.clear()
+
+    return token
 
 
 @pytest.fixture
@@ -108,7 +110,7 @@ def admin_user(client, db):
     email = f"admin-{uuid4()}@example.com"
 
     response = client.post(
-        "/api/v1/users",
+        "/api/v1/auth/register",
         json={
             "name": "Administrador Test",
             "email": email,
@@ -149,5 +151,9 @@ def admin_token(client, admin_user):
 
     assert response.status_code == 200
 
-    return response.json()["data"]["access_token"]
+    token = response.cookies["access_token"]
+
+    client.cookies.clear()
+
+    return token
 

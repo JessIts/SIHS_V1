@@ -16,7 +16,6 @@ from app.schemas.ambiente import (
 )
 from app.services.ambiente_service import AmbienteService
 
-
 router = APIRouter(
     prefix="/ambientes",
     tags=["Ambientes"],

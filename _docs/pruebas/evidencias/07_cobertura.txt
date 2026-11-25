@@ -1,0 +1,178 @@
+........................................................................ [ 55%]
+.........................................................                [100%]
+=============================== warnings summary ===============================
+../../deps/coveragepy/coverage/core.py:93
+    warn(f"Couldn't import C tracer: {IMPORT_ERROR}", slug="no-ctracer", once=True)
+
+tests/integration/routes/test_auth_routes.py: 6 warnings
+tests/integration/routes/test_email_normalization.py: 1 warning
+tests/integration/routes/test_horarios_routes.py: 18 warnings
+tests/integration/routes/test_password_reset_routes.py: 1 warning
+tests/integration/routes/test_user_routes.py: 24 warnings
+tests/unit/core/test_dependencies.py: 2 warnings
+tests/unit/core/test_security.py: 3 warnings
+tests/unit/services/test_auth_service.py: 1 warning
+    return self._jws.encode(
+
+tests/integration/routes/test_auth_routes.py: 4 warnings
+tests/integration/routes/test_horarios_routes.py: 254 warnings
+tests/integration/routes/test_user_routes.py: 25 warnings
+tests/unit/core/test_dependencies.py: 2 warnings
+tests/unit/core/test_security.py: 2 warnings
+    decoded = self.decode_complete(
+
+tests/integration/routes/test_user_routes.py::test_get_my_profile_with_invalid_signature
+    return self._jws.encode(
+
+tests/integration/routes/test_user_routes.py::test_get_my_profile_with_wrong_jwt_algorithm
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.18-final-0 _______________
+
+Name                                                   Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------------------------
+app/__init__.py                                            0      0      0      0   100%
+app/common/pagination.py                                  12      0      0      0   100%
+app/common/responses.py                                    7      0      0      0   100%
+app/controllers/__init__.py                                0      0      0      0   100%
+app/controllers/actividad_aprendizaje_controller.py        4      0      0      0   100%
+app/controllers/ambiente_controller.py                     4      0      0      0   100%
+app/controllers/auth_controller.py                         8      0      0      0   100%
+app/controllers/base_controller.py                        22      0      0      0   100%
+app/controllers/competencia_controller.py                  4      0      0      0   100%
+app/controllers/coordinacion_controller.py                 8      2      0      0    75%   14, 21
+app/controllers/dashboard_controller.py                    6      0      0      0   100%
+app/controllers/dia_semana_controller.py                   4      0      0      0   100%
+app/controllers/ficha_controller.py                       10      0      0      0   100%
+app/controllers/ficha_trimestre_controller.py              4      0      0      0   100%
+app/controllers/franja_horaria_controller.py               4      0      0      0   100%
+app/controllers/horario_controller.py                      6      0      0      0   100%
+app/controllers/jornada_controller.py                      4      0      0      0   100%
+app/controllers/mi_controller.py                          14      0      0      0   100%
+app/controllers/password_reset_controller.py              21      0      2      0   100%
+app/controllers/programa_controller.py                     4      0      0      0   100%
+app/controllers/register_controller.py                     8      0      0      0   100%
+app/controllers/resultado_aprendizaje_controller.py        4      0      0      0   100%
+app/controllers/sede_controller.py                         4      0      0      0   100%
+app/controllers/trimestre_controller.py                    4      0      0      0   100%
+app/controllers/user_controller.py                        26      1      0      0    96%   71
+app/core/__init__.py                                       0      0      0      0   100%
+app/core/config.py                                        19      0      0      0   100%
+app/core/database.py                                      16      7      0      0    56%   28-38
+app/core/dependencies.py                                  39      0     12      0   100%
+app/core/email.py                                         27     21      8      0    17%   23-55
+app/core/exception_handlers.py                            15      1      0      0    93%   18
+app/core/exceptions.py                                     9      0      0      0   100%
+app/core/scope.py                                          8      0      0      0   100%
+app/core/security.py                                      25      0      0      0   100%
+app/main.py                                               18      1      0      0    94%   75
+app/models/__init__.py                                    16      0      0      0   100%
+app/models/actividad_aprendizaje.py                       13      0      0      0   100%
+app/models/ambiente.py                                    13      0      0      0   100%
+app/models/base.py                                        14      0      0      0   100%
+app/models/competencia.py                                 12      0      0      0   100%
+app/models/coordinacion.py                                11      0      0      0   100%
+app/models/dia_semana.py                                   8      0      0      0   100%
+app/models/enums.py                                       18      0      0      0   100%
+app/models/ficha.py                                       22      0      0      0   100%
+app/models/ficha_trimestre.py                             14      0      0      0   100%
+app/models/franja_horaria.py                              13      0      0      0   100%
+app/models/horario.py                                     25      0      0      0   100%
+app/models/jornada.py                                      9      0      0      0   100%
+app/models/password_reset_token.py                        12      0      0      0   100%
+app/models/programa.py                                    13      0      0      0   100%
+app/models/resultado_aprendizaje.py                       12      0      0      0   100%
+app/models/roles.py                                        7      0      0      0   100%
+app/models/sede.py                                        10      0      0      0   100%
+app/models/trimestre.py                                   16      0      0      0   100%
+app/models/user.py                                        16      0      0      0   100%
+app/repositories/__init__.py                               0      0      0      0   100%
+app/repositories/actividad_aprendizaje_repository.py       6      1      0      0    83%   10
+app/repositories/ambiente_repository.py                    6      0      0      0   100%
+app/repositories/base_repository.py                       50      1      6      1    96%   25, 76->80
+app/repositories/competencia_repository.py                 6      1      0      0    83%   10
+app/repositories/coordinacion_repository.py                6      1      0      0    83%   10
+app/repositories/dia_semana_repository.py                  6      0      0      0   100%
+app/repositories/ficha_repository.py                       6      0      0      0   100%
+app/repositories/ficha_trimestre_repository.py             6      1      0      0    83%   10
+app/repositories/franja_horaria_repository.py              6      1      0      0    83%   10
+app/repositories/horario_repository.py                    17      0      2      0   100%
+app/repositories/jornada_repository.py                     6      1      0      0    83%   10
+app/repositories/password_reset_repository.py             18      0      0      0   100%
+app/repositories/programa_repository.py                    6      1      0      0    83%   10
+app/repositories/resultado_aprendizaje_repository.py       6      1      0      0    83%   10
+app/repositories/sede_repository.py                        6      0      0      0   100%
+app/repositories/trimestre_repository.py                   6      1      0      0    83%   10
+app/repositories/user_repository.py                       47      0      6      0   100%
+app/routes/__init__.py                                     0      0      0      0   100%
+app/routes/actividad_aprendizaje_routes.py                41     15      0      0    63%   27-28, 43-45, 74-80, 96-98, 115-117, 135-140, 158, 172-174
+app/routes/ambiente_routes.py                             42      5      0      0    88%   108-110, 129, 184-186
+app/routes/auth_routes.py                                 19      2      0      0    89%   52-57
+app/routes/competencia_routes.py                          41     11      0      0    73%   74-80, 96-98, 115-117, 135-140, 158, 172-174
+app/routes/coordinacion_routes.py                         49     15      0      0    69%   70-75, 91-93, 110-112, 130-135, 153, 167-169, 187-189, 207-209
+app/routes/dashboard_routes.py                            17      0      0      0   100%
+app/routes/dia_semana_routes.py                           41      9      0      0    78%   91-93, 110-112, 130-135, 153, 167-169
+app/routes/ficha_routes.py                                54      9      0      0    83%   109-111, 128-130, 148-153, 171, 185-187
+app/routes/ficha_trimestre_routes.py                      42     10      0      0    76%   80-87, 103-105, 124, 142-147, 165, 179-181
+app/routes/franja_horaria_routes.py                       41     11      0      0    73%   74-80, 96-98, 115-117, 135-140, 158, 172-174
+app/routes/horario_routes.py                              38      1      0      0    97%   123
+app/routes/jornada_routes.py                              41     11      0      0    73%   70-75, 91-93, 110-112, 130-135, 153, 167-169
+app/routes/mi_routes.py                                   30      0      0      0   100%
+app/routes/password_reset_routes.py                       24      0      0      0   100%
+app/routes/programa_routes.py                             41     11      0      0    73%   74-80, 96-98, 115-117, 135-140, 158, 172-174
+app/routes/register_routes.py                             16      0      0      0   100%
+app/routes/resultado_aprendizaje_routes.py                41     11      0      0    73%   78-85, 101-103, 120-122, 140-145, 163, 177-179
+app/routes/router.py                                      42      0      0      0   100%
+app/routes/sede_routes.py                                 41      2      0      0    95%   70-75
+app/routes/trimestre_routes.py                            41     11      0      0    73%   70-75, 91-93, 110-112, 130-135, 153, 167-169
+app/routes/user_routes.py                                 56      3      4      1    93%   83-88, 161
+app/schemas/__init__.py                                    0      0      0      0   100%
+app/schemas/actividad_aprendizaje.py                      26      0      0      0   100%
+app/schemas/ambiente.py                                   23      0      0      0   100%
+app/schemas/auth.py                                        8      0      0      0   100%
+app/schemas/briefs.py                                     44      0      0      0   100%
+app/schemas/competencia.py                                20      0      0      0   100%
+app/schemas/coordinacion.py                               17      0      0      0   100%
+app/schemas/dashboard.py                                  30      0      0      0   100%
+app/schemas/dia_semana.py                                 16      0      0      0   100%
+app/schemas/ficha.py                                      38      1      2      1    95%   22
+app/schemas/ficha_trimestre.py                            21      0      0      0   100%
+app/schemas/franja_horaria.py                             28      1      2      1    93%   18
+app/schemas/horario.py                                    71      0      0      0   100%
+app/schemas/jornada.py                                    13      0      0      0   100%
+app/schemas/mi.py                                         73      0      0      0   100%
+app/schemas/password_reset.py                             10      0      0      0   100%
+app/schemas/programa.py                                   23      0      0      0   100%
+app/schemas/register.py                                    8      0      0      0   100%
+app/schemas/resultado_aprendizaje.py                      20      0      0      0   100%
+app/schemas/sede.py                                       19      0      0      0   100%
+app/schemas/trimestre.py                                  31      1      2      1    94%   19
+app/schemas/types.py                                       5      0      0      0   100%
+app/schemas/user.py                                       44      0      0      0   100%
+app/services/__init__.py                                   0      0      0      0   100%
+app/services/actividad_aprendizaje_service.py             26     10      4      0    53%   23, 30-37, 40-42, 45-48
+app/services/ambiente_service.py                          55      5     18      4    85%   66, 69, 84-87, 89->94
+app/services/auth_service.py                              17      0      6      0   100%
+app/services/base_service.py                             103      5     18      3    93%   67, 203, 208, 223, 303
+app/services/competencia_service.py                       27      7      4      0    65%   33-38, 46-49
+app/services/coordinacion_service.py                      37     16      6      0    49%   43-48, 54-62, 65-77
+app/services/dashboard_service.py                         48      1     12      3    93%   47, 84->114, 116->121
+app/services/dia_semana_service.py                        14      3      2      0    69%   22-25
+app/services/ficha_service.py                             64     11     18      6    74%   59, 62, 65, 79-85, 102, 110, 127
+app/services/ficha_trimestre_service.py                   32      8      6      0    63%   41-49, 73-74
+app/services/franja_horaria_service.py                    26      7      4      0    63%   31-36, 44-47
+app/services/horario_service.py                          188     12     62     12    90%   97->102, 103, 106, 109, 112, 168, 174, 177, 183->186, 187-188, 212, 224, 466
+app/services/jornada_service.py                           16      3      2      0    72%   26-29
+app/services/mi_service.py                                82      8     26      6    85%   118, 138, 151, 154-157, 202, 223
+app/services/password_reset_service.py                    64      3      6      0    96%   125-127
+app/services/programa_service.py                          26      7      4      0    63%   33-40, 51-56
+app/services/register_service.py                          11      0      0      0   100%
+app/services/resultado_aprendizaje_service.py             29      9      6      0    57%   37-51, 62-65
+app/services/sede_service.py                              12      0      0      0   100%
+app/services/trimestre_service.py                         11      0      0      0   100%
+app/services/user_service.py                             147     40     44      6    70%   69-72, 159->168, 175->185, 199-201, 217-220, 235, 252-255, 264-314, 325, 339, 349->354, 361-364
+--------------------------------------------------------------------------------------------------
+TOTAL                                                   3273    338    294     45    87%
+129 passed, 346 warnings in 16.46s

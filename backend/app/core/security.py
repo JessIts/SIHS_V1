@@ -1,12 +1,11 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from argon2 import PasswordHasher
 
 from app.core.config import settings
-
 
 password_hasher = PasswordHasher()
 
@@ -31,7 +30,7 @@ def verify_password(
 def create_access_token(
     subject: str,
 ) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.jwt_access_token_expire_minutes
     )
 
